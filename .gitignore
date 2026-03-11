@@ -1,0 +1,28 @@
+# Build output
+build/
+x64/
+*.exe
+*.pdb
+*.ilk
+*.obj
+*.idb
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.aps
+*.ncb
+*.sdf
+*.opensdf
+ipch/
+*.VC.db
+*.VC.opendb
+
+# Config / license (personal)
+key.txt
+default.json
+
+# OS
+Thumbs.db
+Desktop.ini
