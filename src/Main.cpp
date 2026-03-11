@@ -115,119 +115,64 @@ void RenderThread()
             // ===== C4 TIMER =====
             if (CONFIG_GET(bool, g_Variables.m_Misc.m_bC4Timer))
             {
-                // Count entities for debug
-                int iC4Count = 0;
-                int iTotalEnts = static_cast<int>(vecEntities.size());
-                for (const EntityObject_t& obj : vecEntities)
-                    if (obj.m_eType == EEntityType::ENTITY_PLANTEDC4) iC4Count++;
-
-                // Debug info (bottom-left corner)
-                char szDbg[128];
-                std::uint32_t uBlowOff = 0;
+                try
                 {
-                    auto it = SchemaSystem::m_mapSchemaOffsets.find(FNV1A::HashConst("C_PlantedC4->m_flC4Blow"));
-                    if (it != SchemaSystem::m_mapSchemaOffsets.end()) uBlowOff = it->second;
-                }
-                snprintf(szDbg, sizeof(szDbg), "[C4 DBG] ents:%d c4:%d blow_off:0x%X curtime:%.1f",
-                    iTotalEnts, iC4Count, uBlowOff, g_Interfaces.m_GlobalVars.m_flCurrentTime);
-                Draw::AddText(ImVec2(10.f, static_cast<float>(Window::m_iHeight) - 40.f), szDbg, Color(0, 255, 255, 255), DRAW_TEXT_DROPSHADOW, Color(0, 0, 0, 200));
+                    int iC4Count = 0;
+                    int iTotalEnts = static_cast<int>(vecEntities.size());
+                    for (const EntityObject_t& obj : vecEntities)
+                        if (obj.m_eType == EEntityType::ENTITY_PLANTEDC4) iC4Count++;
 
-                for (const EntityObject_t& obj : vecEntities)
-                {
-                    if (obj.m_eType != EEntityType::ENTITY_PLANTEDC4) continue;
+                    char szDbg[128];
+                    snprintf(szDbg, sizeof(szDbg), "[C4] ents:%d c4:%d", iTotalEnts, iC4Count);
+                    Draw::AddText(ImVec2(10.f, static_cast<float>(Window::m_iHeight) - 30.f), szDbg, Color(0, 255, 255, 200), DRAW_TEXT_DROPSHADOW, Color(0, 0, 0, 200));
 
-                    std::uintptr_t uC4 = reinterpret_cast<std::uintptr_t>(obj.m_pEntity);
-                    if (uC4 < 0x10000) continue;
-
-                    try
+                    if (iC4Count > 0)
                     {
-                        std::uint32_t uSiteOff = 0;
+                        for (const EntityObject_t& obj : vecEntities)
                         {
-                            auto it = SchemaSystem::m_mapSchemaOffsets.find(FNV1A::HashConst("C_PlantedC4->m_nBombSite"));
-                            if (it != SchemaSystem::m_mapSchemaOffsets.end()) uSiteOff = it->second;
-                        }
+                            if (obj.m_eType != EEntityType::ENTITY_PLANTEDC4) continue;
+                            std::uintptr_t uC4 = reinterpret_cast<std::uintptr_t>(obj.m_pEntity);
+                            if (uC4 < 0x10000) continue;
 
-                        const char* szSite = "?";
-                        if (uSiteOff != 0)
-                        {
-                            int nSite = g_Memory.ReadMemory<int>(uC4 + uSiteOff);
-                            if (nSite == 0) szSite = "A";
-                            else if (nSite == 1) szSite = "B";
-                        }
+                            auto itBlow = SchemaSystem::m_mapSchemaOffsets.find(FNV1A::HashConst("C_PlantedC4->m_flC4Blow"));
+                            auto itSite = SchemaSystem::m_mapSchemaOffsets.find(FNV1A::HashConst("C_PlantedC4->m_nBombSite"));
 
-                        float flRemain = -1.f;
-                        if (uBlowOff != 0)
-                        {
-                            float flBlow    = g_Memory.ReadMemory<float>(uC4 + uBlowOff);
-                            float flCurTime = g_Interfaces.m_GlobalVars.m_flCurrentTime;
-
-                            char szDbg2[128];
-                            snprintf(szDbg2, sizeof(szDbg2), "[C4 DBG] ptr:0x%p blow:%.2f cur:%.2f site_off:0x%X",
-                                reinterpret_cast<void*>(uC4), flBlow, flCurTime, uSiteOff);
-                            Draw::AddText(ImVec2(10.f, static_cast<float>(Window::m_iHeight) - 60.f), szDbg2, Color(0, 255, 255, 255), DRAW_TEXT_DROPSHADOW, Color(0, 0, 0, 200));
-
-                            if (std::isfinite(flBlow) && std::isfinite(flCurTime) && flBlow > 0.f && flCurTime > 0.f)
+                            const char* szSite = "?";
+                            if (itSite != SchemaSystem::m_mapSchemaOffsets.end() && itSite->second != 0)
                             {
-                                flRemain = flBlow - flCurTime;
-                                if (flRemain < 0.f || flRemain > 60.f) flRemain = -1.f;
+                                int nSite = g_Memory.ReadMemory<int>(uC4 + itSite->second);
+                                szSite = (nSite == 0) ? "A" : (nSite == 1) ? "B" : "?";
                             }
-                        }
 
-                        Color colTimer(255, 255, 50, 255);
-                        if (flRemain >= 0.f)
-                        {
-                            colTimer = flRemain > 10.f ? Color(255, 255, 50, 255) :
-                                       flRemain > 5.f  ? Color(255, 150, 0,  255) :
-                                                         Color(255, 30,  30, 255);
-                        }
-
-                        char szHud[64];
-                        if (flRemain >= 0.f)
-                            snprintf(szHud, sizeof(szHud), "BOMB [%s]: %.1fs", szSite, flRemain);
-                        else
-                            snprintf(szHud, sizeof(szHud), "BOMB PLANTED [%s]", szSite);
-
-                        float flHudX = Window::m_iWidth * 0.5f - 80.f;
-                        Draw::AddText(ImVec2(flHudX, 60.f), szHud, colTimer, DRAW_TEXT_DROPSHADOW, Color(0, 0, 0, 200));
-
-                        // 3D world marker
-                        std::uint32_t uSceneOff = 0;
-                        {
-                            auto it = SchemaSystem::m_mapSchemaOffsets.find(FNV1A::HashConst("C_BaseEntity->m_pGameSceneNode"));
-                            if (it != SchemaSystem::m_mapSchemaOffsets.end()) uSceneOff = it->second;
-                        }
-                        if (uSceneOff != 0)
-                        {
-                            std::uintptr_t uNode = g_Memory.ReadMemory<std::uintptr_t>(uC4 + uSceneOff);
-                            if (uNode > 0x10000)
+                            float flRemain = -1.f;
+                            if (itBlow != SchemaSystem::m_mapSchemaOffsets.end() && itBlow->second != 0)
                             {
-                                std::uint32_t uOriginOff = 0;
+                                float flBlow = g_Memory.ReadMemory<float>(uC4 + itBlow->second);
+                                float flCur  = g_Interfaces.m_GlobalVars.m_flCurrentTime;
+                                if (std::isfinite(flBlow) && std::isfinite(flCur) && flBlow > 0.f && flCur > 0.f)
                                 {
-                                    auto it = SchemaSystem::m_mapSchemaOffsets.find(FNV1A::HashConst("CGameSceneNode->m_vecAbsOrigin"));
-                                    if (it != SchemaSystem::m_mapSchemaOffsets.end()) uOriginOff = it->second;
-                                }
-                                if (uOriginOff != 0)
-                                {
-                                    Vector vecBomb = g_Memory.ReadMemory<Vector>(uNode + uOriginOff);
-                                    vecBomb.z += 15.f;
-                                    ImVec2 screenBomb;
-                                    if (Draw::WorldToScreen(vecBomb, screenBomb))
-                                    {
-                                        char sz3D[48];
-                                        if (flRemain >= 0.f)
-                                            snprintf(sz3D, sizeof(sz3D), "C4 [%s] %.1fs", szSite, flRemain);
-                                        else
-                                            snprintf(sz3D, sizeof(sz3D), "C4 [%s]", szSite);
-                                        Draw::AddText(ImVec2(screenBomb.x - 30.f, screenBomb.y - 10.f), sz3D, colTimer, DRAW_TEXT_DROPSHADOW, Color(0, 0, 0, 200));
-                                        Draw::AddCircle(screenBomb, 6.f, Color(255, 50, 0, 255), 12, DRAW_CIRCLE_FILLED);
-                                    }
+                                    flRemain = flBlow - flCur;
+                                    if (flRemain < 0.f || flRemain > 60.f) flRemain = -1.f;
                                 }
                             }
+
+                            Color colTimer = (flRemain > 10.f) ? Color(255, 255, 50, 255) :
+                                             (flRemain > 5.f)  ? Color(255, 150, 0, 255) :
+                                             (flRemain >= 0.f) ? Color(255, 30, 30, 255) :
+                                                                 Color(255, 255, 50, 255);
+
+                            char szHud[64];
+                            if (flRemain >= 0.f)
+                                snprintf(szHud, sizeof(szHud), "BOMB [%s]: %.1fs", szSite, flRemain);
+                            else
+                                snprintf(szHud, sizeof(szHud), "BOMB [%s]", szSite);
+
+                            Draw::AddText(ImVec2(Window::m_iWidth * 0.5f - 60.f, 60.f), szHud, colTimer, DRAW_TEXT_DROPSHADOW, Color(0, 0, 0, 200));
+                            break;
                         }
                     }
-                    catch (...) { }
-                    break;
                 }
+                catch (...) { }
             }
         }
 
