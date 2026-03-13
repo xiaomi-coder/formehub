@@ -173,6 +173,36 @@ void ESP::DrawWeapon(const ImVec2& vecMin, const ImVec2& vecMax, const std::stri
 {
     if (szWeapon.empty()) return;
 
+    // Try to draw weapon icon instead of text
+    if (WeaponIcons::HasIcon(szWeapon))
+    {
+        ImTextureID tex = WeaponIcons::GetIcon(szWeapon);
+        if (tex)
+        {
+            float flBoxW = vecMax.x - vecMin.x;
+
+            // Scale icon to fit nicely under the bounding box
+            int iTexW = 0, iTexH = 0;
+            WeaponIcons::GetIconSize(szWeapon, iTexW, iTexH);
+
+            float flAspect = (iTexH > 0) ? (float)iTexW / (float)iTexH : 2.67f;
+            float flIconW = std::clamp(flBoxW * 0.75f, 28.f, 64.f);
+            float flIconH = flIconW / flAspect;
+
+            float cx = (vecMin.x + vecMax.x) * 0.5f;
+            float cy = vecMax.y + Fonts::ESP->FontSize + 4.f; // below HP number
+
+            Color colWeapon = GetWeaponColor(szWeapon);
+
+            Draw::AddImage(tex,
+                ImVec2(cx - flIconW * 0.5f, cy),
+                ImVec2(cx + flIconW * 0.5f, cy + flIconH),
+                colWeapon);
+            return;
+        }
+    }
+
+    // Fallback: draw weapon name as colored text
     Color colWeapon = GetWeaponColor(szWeapon);
 
     std::string szDisplay = szWeapon;

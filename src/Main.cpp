@@ -112,67 +112,100 @@ void RenderThread()
             if (CONFIG_GET(bool, g_Variables.m_Radar.m_bEnableRadar))
                 Radar::Render(vecEntities);
 
-            // ===== C4 TIMER =====
+            // ===== C4 TIMER + ESP =====
             if (CONFIG_GET(bool, g_Variables.m_Misc.m_bC4Timer))
             {
-                try
+                static float s_flRemain = -1.f;
+                static int s_nSite = -1;
+                static int s_iFrame = 0;
+                static Vector s_vecBombPos = { 0.f, 0.f, 0.f };
+                static bool s_bHasPos = false;
+
+                if (s_iFrame++ % 15 == 0)
                 {
-                    int iC4Count = 0;
-                    int iTotalEnts = static_cast<int>(vecEntities.size());
-                    for (const EntityObject_t& obj : vecEntities)
-                        if (obj.m_eType == EEntityType::ENTITY_PLANTEDC4) iC4Count++;
+                    s_flRemain = -1.f;
+                    s_nSite = -1;
+                    s_bHasPos = false;
 
-                    char szDbg[128];
-                    snprintf(szDbg, sizeof(szDbg), "[C4] ents:%d c4:%d", iTotalEnts, iC4Count);
-                    Draw::AddText(ImVec2(10.f, static_cast<float>(Window::m_iHeight) - 30.f), szDbg, Color(0, 255, 255, 200), DRAW_TEXT_DROPSHADOW, Color(0, 0, 0, 200));
-
-                    if (iC4Count > 0)
+                    std::uintptr_t uBase = g_Globals.m_Offsets.m_uPlantedC4;
+                    if (uBase != 0)
                     {
-                        for (const EntityObject_t& obj : vecEntities)
+                        std::uintptr_t pList = g_Memory.ReadMemory<std::uintptr_t>(uBase);
+                        if (pList > 0x10000)
                         {
-                            if (obj.m_eType != EEntityType::ENTITY_PLANTEDC4) continue;
-                            std::uintptr_t uC4 = reinterpret_cast<std::uintptr_t>(obj.m_pEntity);
-                            if (uC4 < 0x10000) continue;
-
-                            auto itBlow = SchemaSystem::m_mapSchemaOffsets.find(FNV1A::HashConst("C_PlantedC4->m_flC4Blow"));
-                            auto itSite = SchemaSystem::m_mapSchemaOffsets.find(FNV1A::HashConst("C_PlantedC4->m_nBombSite"));
-
-                            const char* szSite = "?";
-                            if (itSite != SchemaSystem::m_mapSchemaOffsets.end() && itSite->second != 0)
+                            std::uintptr_t uEnt = g_Memory.ReadMemory<std::uintptr_t>(pList);
+                            if (uEnt > 0x10000)
                             {
-                                int nSite = g_Memory.ReadMemory<int>(uC4 + itSite->second);
-                                szSite = (nSite == 0) ? "A" : (nSite == 1) ? "B" : "?";
-                            }
-
-                            float flRemain = -1.f;
-                            if (itBlow != SchemaSystem::m_mapSchemaOffsets.end() && itBlow->second != 0)
-                            {
-                                float flBlow = g_Memory.ReadMemory<float>(uC4 + itBlow->second);
-                                float flCur  = g_Interfaces.m_GlobalVars.m_flCurrentTime;
-                                if (std::isfinite(flBlow) && std::isfinite(flCur) && flBlow > 0.f && flCur > 0.f)
+                                auto itBlow = SchemaSystem::m_mapSchemaOffsets.find(FNV1A::HashConst("C_PlantedC4->m_flC4Blow"));
+                                if (itBlow != SchemaSystem::m_mapSchemaOffsets.end() && itBlow->second > 0)
                                 {
-                                    flRemain = flBlow - flCur;
-                                    if (flRemain < 0.f || flRemain > 60.f) flRemain = -1.f;
+                                    float flBlow = g_Memory.ReadMemory<float>(uEnt + itBlow->second);
+                                    float flCur = g_Interfaces.m_GlobalVars.m_flCurrentTime;
+
+                                    if (flBlow > 0.f && flCur > 0.f && std::isfinite(flBlow))
+                                    {
+                                        float flRem = flBlow - flCur;
+                                        if (flRem >= 0.f && flRem <= 60.f)
+                                        {
+                                            s_flRemain = flRem;
+
+                                            auto itSite = SchemaSystem::m_mapSchemaOffsets.find(FNV1A::HashConst("C_PlantedC4->m_nBombSite"));
+                                            if (itSite != SchemaSystem::m_mapSchemaOffsets.end() && itSite->second > 0)
+                                                s_nSite = g_Memory.ReadMemory<int>(uEnt + itSite->second);
+
+                                            // Read bomb 3D position: entity -> m_pGameSceneNode -> m_vecAbsOrigin
+                                            auto itNode = SchemaSystem::m_mapSchemaOffsets.find(FNV1A::HashConst("C_BaseEntity->m_pGameSceneNode"));
+                                            auto itOrigin = SchemaSystem::m_mapSchemaOffsets.find(FNV1A::HashConst("CGameSceneNode->m_vecAbsOrigin"));
+
+                                            if (itNode != SchemaSystem::m_mapSchemaOffsets.end() && itNode->second > 0 &&
+                                                itOrigin != SchemaSystem::m_mapSchemaOffsets.end() && itOrigin->second > 0)
+                                            {
+                                                std::uintptr_t pSceneNode = g_Memory.ReadMemory<std::uintptr_t>(uEnt + itNode->second);
+                                                if (pSceneNode > 0x10000)
+                                                {
+                                                    s_vecBombPos = g_Memory.ReadMemory<Vector>(pSceneNode + itOrigin->second);
+                                                    if (std::isfinite(s_vecBombPos.x) && std::isfinite(s_vecBombPos.y) && std::isfinite(s_vecBombPos.z))
+                                                        s_bHasPos = true;
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
                             }
-
-                            Color colTimer = (flRemain > 10.f) ? Color(255, 255, 50, 255) :
-                                             (flRemain > 5.f)  ? Color(255, 150, 0, 255) :
-                                             (flRemain >= 0.f) ? Color(255, 30, 30, 255) :
-                                                                 Color(255, 255, 50, 255);
-
-                            char szHud[64];
-                            if (flRemain >= 0.f)
-                                snprintf(szHud, sizeof(szHud), "BOMB [%s]: %.1fs", szSite, flRemain);
-                            else
-                                snprintf(szHud, sizeof(szHud), "BOMB [%s]", szSite);
-
-                            Draw::AddText(ImVec2(Window::m_iWidth * 0.5f - 60.f, 60.f), szHud, colTimer, DRAW_TEXT_DROPSHADOW, Color(0, 0, 0, 200));
-                            break;
                         }
                     }
                 }
-                catch (...) { }
+
+                if (s_flRemain >= 0.f && s_bHasPos)
+                {
+                    const char* szSite = (s_nSite == 0) ? "A" : (s_nSite == 1) ? "B" : "?";
+                    Color col = (s_flRemain > 10.f) ? Color(255, 255, 50, 255) :
+                                (s_flRemain > 5.f)  ? Color(255, 150, 0, 255)  :
+                                                       Color(255, 30, 30, 255);
+
+                    // Convert bomb world position to screen
+                    ImVec2 screenPos;
+                    if (Draw::WorldToScreen(s_vecBombPos, screenPos))
+                    {
+                        // ESP-style box around bomb
+                        float boxW = 20.f;
+                        float boxH = 16.f;
+                        ImVec2 boxMin(screenPos.x - boxW, screenPos.y - boxH);
+                        ImVec2 boxMax(screenPos.x + boxW, screenPos.y + boxH * 0.3f);
+
+                        // Outline
+                        Draw::AddRect(ImVec2(boxMin.x - 1.f, boxMin.y - 1.f), ImVec2(boxMax.x + 1.f, boxMax.y + 1.f), Color(0, 0, 0, 180), DRAW_RECT_NONE);
+                        // Box
+                        Draw::AddRect(boxMin, boxMax, col, DRAW_RECT_NONE);
+
+                        // Timer text above box
+                        char szWorld[64];
+                        snprintf(szWorld, sizeof(szWorld), "C4 [%s] %.1fs", szSite, s_flRemain);
+                        Draw::AddText(Fonts::ESP, Fonts::ESP->FontSize,
+                            ImVec2(screenPos.x - 28.f, boxMin.y - Fonts::ESP->FontSize - 3.f),
+                            std::string(szWorld), col, DRAW_TEXT_DROPSHADOW, Color(0, 0, 0, 200));
+                    }
+                }
             }
         }
 
@@ -349,6 +382,9 @@ bool MainLoop(LPVOID lpParameter)
         if (!Window::m_bInitialized)
             Window::Create();
 
+        // Load weapon icon PNGs (must be after Window::Create for DX11 device)
+        WeaponIcons::Initialize();
+
         SetPriorityClass(g_Globals.m_Instance, HIGH_PRIORITY_CLASS);
         SetPriorityClass(g_Globals.m_hDll,     HIGH_PRIORITY_CLASS);
         SetPriorityClass(GetCurrentProcess(),   HIGH_PRIORITY_CLASS);
@@ -380,6 +416,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPreviousInstance, LPSTR pAr
 
     if (!MainLoop(hInstance))
     {
+        WeaponIcons::Shutdown();
         g_Memory.~CMemory();
         if (Window::m_bInitialized)
             Window::Destroy();
