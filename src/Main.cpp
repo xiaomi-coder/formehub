@@ -345,6 +345,17 @@ void UpdateThread()
 }
 
 // -----------------------------------------------------------------------
+void HeartbeatThread()
+{
+    SetThreadPriorityWrapper();
+    while (!g_Globals.m_bIsUnloading)
+    {
+        g_License.SendHeartbeat();
+        g_Utilities.Sleep(300000.f);  // 5 minutes
+    }
+}
+
+// -----------------------------------------------------------------------
 __forceinline void CreateThreads()
 {
     std::thread(&EntityThread).detach();
@@ -354,30 +365,37 @@ __forceinline void CreateThreads()
     std::thread(&AimbotThread).detach();
     std::thread(&BhopThread).detach();
     std::thread(&UpdateThread).detach();
+    std::thread(&HeartbeatThread).detach();
 }
 
 // -----------------------------------------------------------------------
 bool MainLoop(LPVOID lpParameter)
 {
-    system(X("cls"));
+    // Login first (needs console for username/password input)
+    g_License.Load();
 
-#ifndef _DEBUG
-    DetachConsole();
-#endif
+    // Keep console open for debug (remove later)
+    // #ifndef _DEBUG
+    //     DetachConsole();
+    // #endif
 
     try
     {
+        std::cout << X("  [*] cs2.exe qidirilmoqda...") << std::endl;
         g_Memory.Initialize(X("cs2.exe"));
+        std::cout << X("  [+] cs2.exe topildi!") << std::endl;
 
         while (g_Memory.GetModule(NAVSYSTEM_DLL).m_uBaseAddress == 0U)
         {
-            std::cout << X("Looking for navsystem.dll") << std::endl;
+            std::cout << X("  [*] navsystem.dll kutilmoqda...") << std::endl;
             g_Utilities.Sleep(500.0f);
         }
+        std::cout << X("  [+] navsystem.dll topildi!") << std::endl;
 
-        g_License.Load();
         Config::Setup(X("default.json"));
+        std::cout << X("  [+] Config yuklandi") << std::endl;
         SchemaSystem::Setup();
+        std::cout << X("  [+] SchemaSystem tayyor") << std::endl;
 
         if (!Window::m_bInitialized)
             Window::Create();
@@ -399,11 +417,10 @@ bool MainLoop(LPVOID lpParameter)
     }
     catch (const std::exception& ex)
     {
-#ifdef _DEBUG
-        _RPT0(_CRT_ERROR, ex.what());
-#else
-        FreeLibraryAndExitThread(static_cast<HMODULE>(lpParameter), EXIT_FAILURE);
-#endif
+        std::cout << X("  [X] XATO: ") << ex.what() << std::endl;
+        std::cout << X("  [*] 10 soniyadan keyin yopiladi...") << std::endl;
+        Sleep(10000);
+        exit(EXIT_FAILURE);
     }
     return EXIT_SUCCESS;
 }

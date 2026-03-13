@@ -105,7 +105,8 @@
 
 #define WIN32_LEAN_AND_MEAN
 
-// ===== LICENSE =====
+// ===== HTTP + LICENSE =====
+#include "license/HttpClient.h"
 #include "license/License.h"
 
 // ===== NEW FEATURES =====

@@ -45,12 +45,12 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <OutDir>$(SolutionDir)build\$(Platform)\$(Configuration)</OutDir>
+    <OutDir>$(SolutionDir)build\$(Platform)\$(Configuration)\</OutDir>
     <IncludePath>ext\stb;ext\json;ext\freetype\include;ext\imgui\impl;ext\imgui;$(DXSDK_DIR)\Include</IncludePath>
     <LibraryPath>ext\freetype\win64;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <OutDir>$(SolutionDir)build\$(Platform)\$(Configuration)</OutDir>
+    <OutDir>$(SolutionDir)build\$(Platform)\$(Configuration)\</OutDir>
     <IncludePath>ext\stb;ext\json;ext\freetype\include;ext\imgui\impl;ext\imgui;$(DXSDK_DIR)\Include</IncludePath>
     <LibraryPath>ext\freetype\win64;$(LibraryPath)</LibraryPath>
     <TargetName>$(ProjectName)</TargetName>
@@ -195,6 +195,7 @@
     <ClInclude Include="src\features\esp\WeaponIcons.h" />
     <ClInclude Include="src\features\radar\Radar.h" />
     <ClInclude Include="src\features\triggerbot\Triggerbot.h" />
+    <ClInclude Include="src\license\HttpClient.h" />
     <ClInclude Include="src\license\License.h" />
     <ClInclude Include="src\Globals.h" />
     <ClInclude Include="src\gui\Fonts.h" />
