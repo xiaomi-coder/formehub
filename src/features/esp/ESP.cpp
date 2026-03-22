@@ -314,6 +314,80 @@ void ESP::DrawSkeleton(C_CSPlayerPawn* pPawn, const Color& col)
 }
 
 // -----------------------------------------------------------------------
+// Draw: filled body ("ghost" / "ruh" mode)
+// Semi-transparent silhouette from bone positions.
+// -----------------------------------------------------------------------
+void ESP::DrawFilledBody(C_CSPlayerPawn* pPawn, const Color& col)
+{
+    CGameSceneNode* pNode = pPawn->m_pGameSceneNode();
+    if (!pNode) return;
+
+    BoneData_t* pBones = pNode->m_pBoneCache();
+    if (!pBones || reinterpret_cast<std::uintptr_t>(pBones) < 0x1000) return;
+
+    auto ReadBone = [&](int idx) -> ImVec2 {
+        BoneData_t b = g_Memory.ReadMemory<BoneData_t>(
+            reinterpret_cast<std::uintptr_t>(pBones) + idx * sizeof(BoneData_t));
+        ImVec2 scr;
+        if (!Draw::WorldToScreen(b.m_vecPosition, scr))
+            return ImVec2(-1, -1);
+        return scr;
+    };
+
+    auto Valid = [](const ImVec2& v) { return v.x >= 0 && v.y >= 0; };
+
+    // Read bones
+    ImVec2 head = ReadBone(6), neck = ReadBone(5);
+    ImVec2 spineTop = ReadBone(4), pelvis = ReadBone(0);
+    ImVec2 lShoulder = ReadBone(8), lElbow = ReadBone(9), lHand = ReadBone(10);
+    ImVec2 rShoulder = ReadBone(13), rElbow = ReadBone(14), rHand = ReadBone(15);
+    ImVec2 lThigh = ReadBone(22), lKnee = ReadBone(23), lFoot = ReadBone(24);
+    ImVec2 rThigh = ReadBone(25), rKnee = ReadBone(26), rFoot = ReadBone(27);
+
+    if (!Valid(neck) || !Valid(pelvis)) return;
+
+    Color colFill(col, 45);
+    Color colEdge(col, 110);
+
+    auto FillTri = [&](const ImVec2& a, const ImVec2& b, const ImVec2& c) {
+        if (!Valid(a) || !Valid(b) || !Valid(c)) return;
+        std::vector<ImVec2> pts = { a, b, c };
+        Draw::AddPolygon(pts, colFill, DRAW_POLYGON_FILLED, colEdge, true, 1.f);
+    };
+
+    // TORSO
+    if (Valid(lShoulder) && Valid(rShoulder))
+    {
+        FillTri(neck, lShoulder, pelvis);
+        FillTri(neck, rShoulder, pelvis);
+    }
+
+    // HEAD circle
+    if (Valid(head) && Valid(neck))
+    {
+        float hs = std::sqrtf((head.x-neck.x)*(head.x-neck.x)+(head.y-neck.y)*(head.y-neck.y)) * 0.7f;
+        hs = std::clamp(hs, 5.f, 25.f);
+        Draw::AddCircle(head, hs, colFill, 12, DRAW_CIRCLE_FILLED, colEdge);
+    }
+
+    // LEFT ARM
+    if (Valid(lShoulder) && Valid(lElbow)) FillTri(lShoulder, lElbow, ImVec2(lShoulder.x+3,lShoulder.y+3));
+    if (Valid(lElbow) && Valid(lHand)) FillTri(lElbow, lHand, ImVec2(lElbow.x+2,lElbow.y+2));
+
+    // RIGHT ARM
+    if (Valid(rShoulder) && Valid(rElbow)) FillTri(rShoulder, rElbow, ImVec2(rShoulder.x-3,rShoulder.y+3));
+    if (Valid(rElbow) && Valid(rHand)) FillTri(rElbow, rHand, ImVec2(rElbow.x-2,rElbow.y+2));
+
+    // LEFT LEG
+    if (Valid(lThigh) && Valid(lKnee)) FillTri(pelvis, lThigh, ImVec2(lThigh.x+4,(pelvis.y+lThigh.y)*0.5f));
+    if (Valid(lKnee) && Valid(lFoot)) { FillTri(lThigh, lKnee, ImVec2(lThigh.x+3,(lThigh.y+lKnee.y)*0.5f)); FillTri(lKnee, lFoot, ImVec2(lKnee.x+2,(lKnee.y+lFoot.y)*0.5f)); }
+
+    // RIGHT LEG
+    if (Valid(rThigh) && Valid(rKnee)) FillTri(pelvis, rThigh, ImVec2(rThigh.x-4,(pelvis.y+rThigh.y)*0.5f));
+    if (Valid(rKnee) && Valid(rFoot)) { FillTri(rThigh, rKnee, ImVec2(rThigh.x-3,(rThigh.y+rKnee.y)*0.5f)); FillTri(rKnee, rFoot, ImVec2(rKnee.x-2,(rKnee.y+rFoot.y)*0.5f)); }
+}
+
+// -----------------------------------------------------------------------
 // Main per-player render
 // -----------------------------------------------------------------------
 void ESP::RenderPlayer(CCSPlayerController* pController, C_CSPlayerPawn* pPawn)
@@ -330,6 +404,10 @@ void ESP::RenderPlayer(CCSPlayerController* pController, C_CSPlayerPawn* pPawn)
         return;
 
     int iBoxType = CONFIG_GET(int, g_Variables.m_PlayerVisuals.m_iBoxType);
+
+    // --- Filled Body (draw FIRST so other elements appear on top) ---
+    if (CONFIG_GET(bool, g_Variables.m_PlayerVisuals.m_bDrawFilledBody))
+        DrawFilledBody(pPawn, col);
 
     // --- Box ---
     if (CONFIG_GET(bool, g_Variables.m_PlayerVisuals.m_bDrawBox))

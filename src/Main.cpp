@@ -112,6 +112,10 @@ void RenderThread()
             if (CONFIG_GET(bool, g_Variables.m_Radar.m_bEnableRadar))
                 Radar::Render(vecEntities);
 
+            // ===== SPECTATOR LIST =====
+            if (CONFIG_GET(bool, g_Variables.m_SpectatorList.m_bEnableSpectatorList))
+                SpectatorList::Render(vecEntities);
+
             // ===== C4 TIMER + ESP =====
             if (CONFIG_GET(bool, g_Variables.m_Misc.m_bC4Timer))
             {

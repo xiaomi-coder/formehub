@@ -348,6 +348,8 @@ void Gui::Render()
                     ImGui::SameLine(220.f);
                     ImGui::Checkbox(X("Head Dot"),    &CONFIG_GET(bool, g_Variables.m_PlayerVisuals.m_bDrawHeadDot));
 
+                    ImGui::Checkbox(X("Filled Body"), &CONFIG_GET(bool, g_Variables.m_PlayerVisuals.m_bDrawFilledBody));
+
                     ImGui::Checkbox(X("Snap Lines"),  &CONFIG_GET(bool, g_Variables.m_PlayerVisuals.m_bDrawSnaplines));
 
                 ImGui::Spacing();
@@ -464,6 +466,8 @@ void Gui::Render()
                     LockedFeature("Aimbot", ETier::PRO);
                 }
 
+                ImGui::Spacing();
+                ImGui::Spacing();
                 ImGui::EndTabItem();
             }
 
@@ -577,6 +581,11 @@ void Gui::Render()
                 ImGui::Checkbox(X("C4 Timer"), &CONFIG_GET(bool, g_Variables.m_Misc.m_bC4Timer));
                 ImGui::PushStyleColor(ImGuiCol_Text, C(100, 100, 120));
                 ImGui::Text("  Bomba portlashigacha qolgan vaqtni ko'rsatadi");
+                ImGui::PopStyleColor();
+
+                ImGui::Checkbox(X("Spectator List"), &CONFIG_GET(bool, g_Variables.m_SpectatorList.m_bEnableSpectatorList));
+                ImGui::PushStyleColor(ImGuiCol_Text, C(100, 100, 120));
+                ImGui::Text("  Sizni kim tomosha qilayotganini ko'rsatadi");
                 ImGui::PopStyleColor();
 
                 ImGui::Spacing();

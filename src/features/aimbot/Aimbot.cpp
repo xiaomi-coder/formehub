@@ -5,21 +5,77 @@ static constexpr int BONE_NECK  = 5;
 static constexpr int BONE_CHEST = 4;
 
 // -----------------------------------------------------------------------
+// Get hitbox position for a player.
+// Tries bone cache first, falls back to m_vecAbsOrigin + height offset.
+// -----------------------------------------------------------------------
 Vector Aimbot::GetHitboxPosition(C_CSPlayerPawn* pPawn, int iHitbox)
 {
     CGameSceneNode* pNode = pPawn->m_pGameSceneNode();
     if (!pNode) return {};
 
+    Vector vecOrigin = pNode->m_vecAbsOrigin();
+    if (vecOrigin.IsZero()) return {};
+
+    // --- Try bone data first ---
     BoneData_t* pBones = pNode->m_pBoneCache();
-    if (!pBones) return {};
+    if (pBones && reinterpret_cast<std::uintptr_t>(pBones) > 0x10000)
+    {
+        int iBone = BONE_HEAD;
+        if (iHitbox == 1) iBone = BONE_NECK;
+        else if (iHitbox == 2) iBone = BONE_CHEST;
 
-    int iBone = BONE_HEAD;
-    if (iHitbox == 1) iBone = BONE_NECK;
-    else if (iHitbox == 2) iBone = BONE_CHEST;
+        BoneData_t bone = g_Memory.ReadMemory<BoneData_t>(
+            reinterpret_cast<std::uintptr_t>(pBones) + iBone * sizeof(BoneData_t));
 
-    BoneData_t bone = g_Memory.ReadMemory<BoneData_t>(
-        reinterpret_cast<std::uintptr_t>(pBones) + iBone * sizeof(BoneData_t));
-    return bone.m_vecPosition;
+        // Validate: bone position should be finite and not zero
+        if (!bone.m_vecPosition.IsZero() &&
+            std::isfinite(bone.m_vecPosition.x) &&
+            std::isfinite(bone.m_vecPosition.y) &&
+            std::isfinite(bone.m_vecPosition.z))
+        {
+            return bone.m_vecPosition;
+        }
+    }
+
+    // --- Fallback: estimate from m_vecAbsOrigin + height ---
+    // Detect crouch: read collision bounds to check player height
+    // Standing player: ~72u tall, Crouching: ~54u tall
+    float flHeadOfs = 64.f;
+    float flNeckOfs = 55.f;
+    float flChestOfs = 38.f;
+
+    // Try to detect crouch via m_vecViewOffset (from schema)
+
+    // Read collision bounds from pawn for height detection
+    // C_BaseEntity->m_pCollision->m_vecMaxs.z tells us actual height
+    std::uintptr_t uPawnAddr = reinterpret_cast<std::uintptr_t>(pPawn);
+    if (uPawnAddr > 0x10000)
+    {
+        // Read view offset Z — this tells us standing vs crouching
+        // Standing eye height: ~64, Crouching eye height: ~46
+        // We use CCSPlayerPawn schema if available
+        static std::uint32_t uViewOffsetZ = SchemaSystem::m_mapSchemaOffsets[FNV1A::HashConst("C_BaseModelEntity->m_vecViewOffset")];
+        if (uViewOffsetZ != 0)
+        {
+            Vector vecViewOffset = g_Memory.ReadMemory<Vector>(uPawnAddr + uViewOffsetZ);
+            if (std::isfinite(vecViewOffset.z) && vecViewOffset.z > 1.f)
+            {
+                // Use view offset directly as head height (most accurate)
+                flHeadOfs = vecViewOffset.z;
+                flNeckOfs = vecViewOffset.z - 7.f;
+                flChestOfs = vecViewOffset.z - 24.f;
+            }
+        }
+    }
+
+    if (iHitbox == 0)       // Head
+        vecOrigin.z += flHeadOfs;
+    else if (iHitbox == 1)  // Neck
+        vecOrigin.z += flNeckOfs;
+    else if (iHitbox == 2)  // Chest
+        vecOrigin.z += flChestOfs;
+
+    return vecOrigin;
 }
 
 // -----------------------------------------------------------------------
@@ -101,21 +157,35 @@ void Aimbot::DrawFOVCircle()
     float flRadius = std::tan(M_DEG2RAD(flFOV) * 0.5f) * flH;
     if (flRadius <= 0.f || !std::isfinite(flRadius)) return;
 
-    Draw::AddCircle(center, flRadius, Color(255, 255, 255, 80), 64, DRAW_CIRCLE_NONE);
+    Draw::AddCircle(center, flRadius, Color(0, 255, 80, 180), 64, DRAW_CIRCLE_NONE);
 }
 
 // -----------------------------------------------------------------------
+// Debug counter to limit console spam (print every ~200 calls = ~1 sec)
+static int s_iDebugCounter = 0;
+
 void Aimbot::Run(const std::vector<EntityObject_t>& vecEntities)
 {
     int iAimKey = CONFIG_GET(int, g_Variables.m_AimBot.m_iAimKey);
     if (!(GetAsyncKeyState(iAimKey) & 0x8000)) return;
 
     C_CSPlayerPawn* pLocalPawn = g_Globals.m_LocalPlayer.m_pPlayerPawn;
-    if (!pLocalPawn) return;
+    if (!pLocalPawn)
+    {
+        if (s_iDebugCounter++ % 200 == 0)
+            std::cout << X("  [AIM] Local pawn = null") << std::endl;
+        return;
+    }
 
     float flBestDist;
     C_CSPlayerPawn* pTarget = FindBestTarget(vecEntities, flBestDist);
-    if (!pTarget) return;
+    if (!pTarget)
+    {
+        if (s_iDebugCounter++ % 200 == 0)
+            std::cout << X("  [AIM] Target topilmadi (entities=") << vecEntities.size()
+                      << X(", FOV=") << CONFIG_GET(float, g_Variables.m_AimBot.m_flFOV) << X(")") << std::endl;
+        return;
+    }
 
     Vector vecTarget = GetHitboxPosition(pTarget, CONFIG_GET(int, g_Variables.m_AimBot.m_iHitbox));
     if (vecTarget.IsZero()) return;
@@ -145,6 +215,10 @@ void Aimbot::Run(const std::vector<EntityObject_t>& vecEntities)
     // Skip tiny movements (already on target)
     if (std::fabsf(flDeltaX) < 0.5f && std::fabsf(flDeltaY) < 0.5f) return;
 
+    if (s_iDebugCounter++ % 200 == 0)
+        std::cout << X("  [AIM] MOVING dx=") << flDeltaX << X(" dy=") << flDeltaY << std::endl;
+
     // Use mouse_event — works with CS2 Raw Input (unlike SendInput)
-    mouse_event(MOUSEEVENTF_MOVE, static_cast<DWORD>(flDeltaX), static_cast<DWORD>(flDeltaY), 0, 0);
+    // IMPORTANT: use (LONG) cast, NOT (DWORD), because delta can be NEGATIVE
+    mouse_event(MOUSEEVENTF_MOVE, static_cast<LONG>(flDeltaX), static_cast<LONG>(flDeltaY), 0, 0);
 }

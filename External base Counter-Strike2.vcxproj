@@ -192,6 +192,7 @@
     <ClInclude Include="src\features\bhop\Bhop.h" />
     <ClInclude Include="src\features\entities\EntityList.h" />
     <ClInclude Include="src\features\esp\ESP.h" />
+    <ClInclude Include="src\features\esp\SpectatorList.h" />
     <ClInclude Include="src\features\esp\WeaponIcons.h" />
     <ClInclude Include="src\features\radar\Radar.h" />
     <ClInclude Include="src\features\triggerbot\Triggerbot.h" />
@@ -237,6 +238,7 @@
     <ClCompile Include="src\features\bhop\Bhop.cpp" />
     <ClCompile Include="src\features\entities\EntityList.cpp" />
     <ClCompile Include="src\features\esp\ESP.cpp" />
+    <ClCompile Include="src\features\esp\SpectatorList.cpp" />
     <ClCompile Include="src\features\esp\WeaponIcons.cpp" />
     <ClCompile Include="src\features\radar\Radar.cpp" />
     <ClCompile Include="src\features\triggerbot\Triggerbot.cpp" />

@@ -47,6 +47,13 @@ public:
 		CONFIG_ADD_VARIABLE(bool,  m_bOnlyVisible,      true); // don't shoot through walls
 	}; TriggerBotVariables_t m_TriggerBot;
 
+
+	// ================ SPECTATOR LIST ==================
+	struct SpectatorListVariables_t
+	{
+		CONFIG_ADD_VARIABLE(bool, m_bEnableSpectatorList, false);
+	}; SpectatorListVariables_t m_SpectatorList;
+
 	// ====================== ESP =======================
 	struct PlayerVisualsVariables_t
 	{
@@ -61,6 +68,7 @@ public:
 		CONFIG_ADD_VARIABLE(bool, m_bDrawWeapon,     true);
 		CONFIG_ADD_VARIABLE(bool, m_bDrawDistance,   false);
 		CONFIG_ADD_VARIABLE(bool, m_bDrawSkeleton,   false);
+		CONFIG_ADD_VARIABLE(bool, m_bDrawFilledBody, false);
 		CONFIG_ADD_VARIABLE(bool, m_bDrawHeadDot,    false);
 		CONFIG_ADD_VARIABLE(bool, m_bDrawSnaplines,  false);
 

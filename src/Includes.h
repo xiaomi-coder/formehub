@@ -112,6 +112,7 @@
 // ===== NEW FEATURES =====
 #include "features/esp/ESP.h"
 #include "features/esp/WeaponIcons.h"
+#include "features/esp/SpectatorList.h"
 #include "features/aimbot/Aimbot.h"
 #include "features/triggerbot/Triggerbot.h"
 #include "features/radar/Radar.h"

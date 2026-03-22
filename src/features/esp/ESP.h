@@ -19,4 +19,5 @@ namespace ESP
     void DrawHeadDot(C_CSPlayerPawn* pPawn);
     void DrawSnapline(const ImVec2& vecMin, const ImVec2& vecMax);
     void DrawSkeleton(C_CSPlayerPawn* pPawn, const Color& col);
+    void DrawFilledBody(C_CSPlayerPawn* pPawn, const Color& col);
 }
