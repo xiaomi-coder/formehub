@@ -116,6 +116,23 @@ void RenderThread()
             if (CONFIG_GET(bool, g_Variables.m_SpectatorList.m_bEnableSpectatorList))
                 SpectatorList::Render(vecEntities);
 
+            // ===== WATERMARK =====
+            if (CONFIG_GET(bool, g_Variables.m_Misc.m_bWatermark))
+            {
+                char szWatermark[64];
+                snprintf(szWatermark, sizeof(szWatermark), "shifthub.uz | FPS: %03d", static_cast<int>(ImGui::GetIO().Framerate));
+                
+                ImVec2 textSize = Fonts::Default->CalcTextSizeA(Fonts::Default->FontSize, FLT_MAX, 0.0f, szWatermark);
+                ImVec2 padding(8.f, 4.f);
+                ImVec2 boxMin(15.f, 15.f);
+                ImVec2 boxMax(15.f + textSize.x + padding.x * 2.f, 15.f + textSize.y + padding.y * 2.f);
+
+                // Background and outline
+                Draw::AddRect(boxMin, boxMax, Color(10, 12, 18, 200), DRAW_RECT_FILLED | DRAW_RECT_OUTLINE, Color(0, 180, 60, 255), 4.f);
+                // Text
+                Draw::AddText(Fonts::Default, Fonts::Default->FontSize, ImVec2(boxMin.x + padding.x, boxMin.y + padding.y), std::string(szWatermark), Color(200, 255, 210, 255), DRAW_TEXT_DROPSHADOW, Color(0, 0, 0, 255));
+            }
+
             // ===== C4 TIMER + ESP =====
             if (CONFIG_GET(bool, g_Variables.m_Misc.m_bC4Timer))
             {
@@ -329,6 +346,9 @@ void TickThread()
             // ===== TRIGGERBOT =====
             if (g_License.HasFeature(ETier::MID) && CONFIG_GET(bool, g_Variables.m_TriggerBot.m_bEnableTriggerbot))
                 Triggerbot::Run(vecEntities);
+
+            // ===== SKIN CHANGER =====
+            SkinChanger::Run();
         }
         catch (...) { }
 

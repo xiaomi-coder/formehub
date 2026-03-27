@@ -71,6 +71,7 @@ public:
 		CONFIG_ADD_VARIABLE(bool, m_bDrawFilledBody, false);
 		CONFIG_ADD_VARIABLE(bool, m_bDrawHeadDot,    false);
 		CONFIG_ADD_VARIABLE(bool, m_bDrawSnaplines,  false);
+		CONFIG_ADD_VARIABLE(bool, m_bDrawHasC4,      true);
 
 		CONFIG_ADD_VARIABLE(Color, m_colEnemyVisible,  Color(0,   255, 50,  255));
 		CONFIG_ADD_VARIABLE(Color, m_colEnemyOccluded, Color(0,   180, 30,  200));
@@ -89,6 +90,7 @@ public:
 	{
 		CONFIG_ADD_VARIABLE(bool, m_bAntiFlash,    false);
 		CONFIG_ADD_VARIABLE(bool, m_bC4Timer,      false);
+		CONFIG_ADD_VARIABLE(bool, m_bWatermark,    true);
 	}; MiscVariables_t m_Misc;
 
 	// ================== HOTKEYS =======================

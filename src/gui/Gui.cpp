@@ -112,13 +112,13 @@ static void SectionTitle(const char* label)
 static void LockedFeature(const char* szFeatureName, ETier eRequired)
 {
     ImGui::PushStyleColor(ImGuiCol_Text, C(255, 60, 60));
-    ImGui::Text("  [LOCKED]  %s  -  Requires %s tier",
+    ImGui::Text("  [QULFLANGAN]  %s  -  %s daraja kerak",
         szFeatureName,
         eRequired == ETier::MID ? "MID" : "PRO");
     ImGui::PopStyleColor();
 
     ImGui::PushStyleColor(ImGuiCol_Text, C(120, 120, 140));
-    ImGui::Text("  Upgrade at shifthub.uz");
+    ImGui::Text("  Yangilash shifthub.uz orqali");
     ImGui::PopStyleColor();
     ImGui::Spacing();
 }
@@ -189,7 +189,7 @@ static void KeyBind(const char* label, int& key, const char* id)
         ImGui::PushStyleColor(ImGuiCol_Text,          C(255, 255, 100));
 
         char buf[32];
-        snprintf(buf, sizeof(buf), "[ Press key... ]##%s", id);
+        snprintf(buf, sizeof(buf), "[ Tugmani bosing... ]##%s", id);
         ImGui::Button(buf, ImVec2(140.f, 0.f));
         ImGui::PopStyleColor(3);
 
@@ -209,7 +209,7 @@ static void KeyBind(const char* label, int& key, const char* id)
     {
         // Show current key name + Bind button
         char btnLabel[64];
-        snprintf(btnLabel, sizeof(btnLabel), "[ %-8s ] Bind##%s", GetKeyName(key), id);
+        snprintf(btnLabel, sizeof(btnLabel), "[ %-8s ] O'rnatish##%s", GetKeyName(key), id);
 
         ImGui::PushStyleColor(ImGuiCol_Button,        C(20, 60, 30));
         ImGui::PushStyleColor(ImGuiCol_ButtonHovered, C(30, 90, 45));
@@ -224,7 +224,7 @@ static void KeyBind(const char* label, int& key, const char* id)
     // "0 = Auto" hint for trigger key
     ImGui::SameLine();
     ImGui::PushStyleColor(ImGuiCol_Text, C(80, 80, 100));
-    ImGui::Text("(ESC=cancel)");
+    ImGui::Text("(ESC=bekor qilish)");
     ImGui::PopStyleColor();
 }
 
@@ -289,7 +289,7 @@ void Gui::Render()
     {
         // Tier badge strip
         ImGui::PushStyleColor(ImGuiCol_Text, g_License.GetTierColor());
-        ImGui::Text("  Tier: %s   |   %s   |   shifthub.uz",
+        ImGui::Text("  Daraja: %s   |   %s   |   shifthub.uz",
             g_License.GetTierName(),
             g_License.m_strExpiry.c_str());
         ImGui::PopStyleColor();
@@ -302,12 +302,12 @@ void Gui::Render()
             // ============================================================
             // VISUALS  (all tiers)
             // ============================================================
-            if (ImGui::BeginTabItem(X("[ VISUALS ]")))
+            if (ImGui::BeginTabItem(X("[ VIZUAL ]")))
             {
                 ImGui::Spacing();
-                SectionTitle("Player ESP");
+                SectionTitle("O'yinchi ESP");
 
-                ImGui::Checkbox(X("Enable ESP"), &CONFIG_GET(bool, g_Variables.m_PlayerVisuals.m_bEnableVisuals));
+                ImGui::Checkbox(X("ESP yoqish"), &CONFIG_GET(bool, g_Variables.m_PlayerVisuals.m_bEnableVisuals));
 
                 if (CONFIG_GET(bool, g_Variables.m_PlayerVisuals.m_bEnableVisuals))
                 {
@@ -316,53 +316,55 @@ void Gui::Render()
                         auto& vecMod = Config::Get<std::vector<bool>>(g_Variables.m_PlayerVisuals.m_vecVisualsModifiers);
                         bool bIgnoreTeam = vecMod[VISUALS_IGNORE_TEAMMATES];
                         bool bOnlyVis    = vecMod[VISUALS_ONLY_WHEN_VISIBLE];
-                        if (ImGui::Checkbox(X("Ignore Teammates"), &bIgnoreTeam)) vecMod[VISUALS_IGNORE_TEAMMATES] = bIgnoreTeam;
+                        if (ImGui::Checkbox(X("Jamoani e'tiborsiz"), &bIgnoreTeam)) vecMod[VISUALS_IGNORE_TEAMMATES] = bIgnoreTeam;
                         ImGui::SameLine(220.f);
-                        if (ImGui::Checkbox(X("Only Visible"), &bOnlyVis))        vecMod[VISUALS_ONLY_WHEN_VISIBLE] = bOnlyVis;
+                        if (ImGui::Checkbox(X("Faqat ko'ringanlar"), &bOnlyVis))        vecMod[VISUALS_ONLY_WHEN_VISIBLE] = bOnlyVis;
                     }
 
                     ImGui::Spacing();
-                    SectionTitle("Box");
+                    SectionTitle("Quti");
 
-                    ImGui::Checkbox(X("Draw Box"), &CONFIG_GET(bool, g_Variables.m_PlayerVisuals.m_bDrawBox));
+                    ImGui::Checkbox(X("Quti chizish"), &CONFIG_GET(bool, g_Variables.m_PlayerVisuals.m_bDrawBox));
                     if (CONFIG_GET(bool, g_Variables.m_PlayerVisuals.m_bDrawBox))
                     {
-                        static const char* boxTypes[] = { "2D Box", "Corner Box", "Both" };
+                        static const char* boxTypes[] = { "2D Quti", "Burchak", "Ikkisi" };
                         ImGui::SetNextItemWidth(160.f);
-                        ImGui::Combo(X("Box Type"), &CONFIG_GET(int, g_Variables.m_PlayerVisuals.m_iBoxType), boxTypes, 3);
-                        ImGui::Checkbox(X("Box Outline"), &CONFIG_GET(bool, g_Variables.m_PlayerVisuals.m_bDrawBoxOutline));
+                        ImGui::Combo(X("Quti turi"), &CONFIG_GET(int, g_Variables.m_PlayerVisuals.m_iBoxType), boxTypes, 3);
+                        ImGui::Checkbox(X("Quti chegarasi"), &CONFIG_GET(bool, g_Variables.m_PlayerVisuals.m_bDrawBoxOutline));
                     }
 
                     ImGui::Spacing();
-                    SectionTitle("Overlays");
+                    SectionTitle("Qo'shimcha ma'lumotlar");
 
-                    ImGui::Checkbox(X("Health Bar"),  &CONFIG_GET(bool, g_Variables.m_PlayerVisuals.m_bDrawHealthBar));
+                    ImGui::Checkbox(X("Jon paneli"),  &CONFIG_GET(bool, g_Variables.m_PlayerVisuals.m_bDrawHealthBar));
                     ImGui::SameLine(220.f);
-                    ImGui::Checkbox(X("Player Name"), &CONFIG_GET(bool, g_Variables.m_PlayerVisuals.m_bDrawName));
+                    ImGui::Checkbox(X("Ism"), &CONFIG_GET(bool, g_Variables.m_PlayerVisuals.m_bDrawName));
 
-                    ImGui::Checkbox(X("Weapon Name"), &CONFIG_GET(bool, g_Variables.m_PlayerVisuals.m_bDrawWeapon));
+                    ImGui::Checkbox(X("Qurol nomi"), &CONFIG_GET(bool, g_Variables.m_PlayerVisuals.m_bDrawWeapon));
                     ImGui::SameLine(220.f);
-                    ImGui::Checkbox(X("Distance"),    &CONFIG_GET(bool, g_Variables.m_PlayerVisuals.m_bDrawDistance));
+                    ImGui::Checkbox(X("Masofa"),    &CONFIG_GET(bool, g_Variables.m_PlayerVisuals.m_bDrawDistance));
 
-                    ImGui::Checkbox(X("Skeleton"),    &CONFIG_GET(bool, g_Variables.m_PlayerVisuals.m_bDrawSkeleton));
+                    ImGui::Checkbox(X("Skelet"),    &CONFIG_GET(bool, g_Variables.m_PlayerVisuals.m_bDrawSkeleton));
                     ImGui::SameLine(220.f);
-                    ImGui::Checkbox(X("Head Dot"),    &CONFIG_GET(bool, g_Variables.m_PlayerVisuals.m_bDrawHeadDot));
+                    ImGui::Checkbox(X("Bosh nuqta"),    &CONFIG_GET(bool, g_Variables.m_PlayerVisuals.m_bDrawHeadDot));
 
-                    ImGui::Checkbox(X("Filled Body"), &CONFIG_GET(bool, g_Variables.m_PlayerVisuals.m_bDrawFilledBody));
+                    ImGui::Checkbox(X("Tana bo'yash"), &CONFIG_GET(bool, g_Variables.m_PlayerVisuals.m_bDrawFilledBody));
+                    ImGui::SameLine(220.f);
+                    ImGui::Checkbox(X("Chiziqlar"),  &CONFIG_GET(bool, g_Variables.m_PlayerVisuals.m_bDrawSnaplines));
 
-                    ImGui::Checkbox(X("Snap Lines"),  &CONFIG_GET(bool, g_Variables.m_PlayerVisuals.m_bDrawSnaplines));
+                    ImGui::Checkbox(X("Bomba ogohlantirish"), &CONFIG_GET(bool, g_Variables.m_PlayerVisuals.m_bDrawHasC4));
 
                 ImGui::Spacing();
-                SectionTitle("Hotkey");
+                SectionTitle("Tezkor tugma");
 
-                KeyBind("ESP Toggle:", CONFIG_GET(int, g_Variables.m_Hotkeys.m_iESPToggleKey), "espkey");
+                KeyBind("ESP yoqish/o'chirish:", CONFIG_GET(int, g_Variables.m_Hotkeys.m_iESPToggleKey), "espkey");
 
                 ImGui::Spacing();
-                SectionTitle("Colors");
+                SectionTitle("Ranglar");
 
-                    ColorEdit4Shim(X("Enemy Visible"),  CONFIG_GET(Color, g_Variables.m_PlayerVisuals.m_colEnemyVisible));
-                    ColorEdit4Shim(X("Enemy Occluded"), CONFIG_GET(Color, g_Variables.m_PlayerVisuals.m_colEnemyOccluded));
-                    ColorEdit4Shim(X("Teammate"),       CONFIG_GET(Color, g_Variables.m_PlayerVisuals.m_colTeammate));
+                    ColorEdit4Shim(X("Dushman (ko'ringan)"),  CONFIG_GET(Color, g_Variables.m_PlayerVisuals.m_colEnemyVisible));
+                    ColorEdit4Shim(X("Dushman (yashirin)"), CONFIG_GET(Color, g_Variables.m_PlayerVisuals.m_colEnemyOccluded));
+                    ColorEdit4Shim(X("Jamoadosh"),       CONFIG_GET(Color, g_Variables.m_PlayerVisuals.m_colTeammate));
                 }
 
                 ImGui::EndTabItem();
@@ -371,7 +373,7 @@ void Gui::Render()
             // ============================================================
             // MOVEMENT  (MID+)
             // ============================================================
-            if (ImGui::BeginTabItem(X("[ MOVEMENT ]")))
+            if (ImGui::BeginTabItem(X("[ HARAKAT ]")))
             {
                 ImGui::Spacing();
 
@@ -379,7 +381,7 @@ void Gui::Render()
                 {
                     SectionTitle("Bunny Hop");
 
-                    ImGui::Checkbox(X("Enable Bhop"), &CONFIG_GET(bool, g_Variables.m_Bhop.m_bEnableBhop));
+                    ImGui::Checkbox(X("Bhop yoqish"), &CONFIG_GET(bool, g_Variables.m_Bhop.m_bEnableBhop));
 
                     if (CONFIG_GET(bool, g_Variables.m_Bhop.m_bEnableBhop))
                     {
@@ -387,7 +389,7 @@ void Gui::Render()
                         ImGui::PushStyleColor(ImGuiCol_Text, C(255, 200, 50));
                         ImGui::Text("  Space (32) ishlatmang!");
                         ImGui::PopStyleColor();
-                        KeyBind("Hold Key:", CONFIG_GET(int, g_Variables.m_Bhop.m_iBhopKey), "bhopkey");
+                        KeyBind("Ushlab turish:", CONFIG_GET(int, g_Variables.m_Bhop.m_iBhopKey), "bhopkey");
                         ImGui::PushStyleColor(ImGuiCol_Text, C(100, 100, 120));
                         ImGui::Text("  Bu tugmani ushlab turing — cheat Space bosadi");
                         ImGui::PopStyleColor();
@@ -404,7 +406,7 @@ void Gui::Render()
             // ============================================================
             // COMBAT  (MID: Triggerbot | PRO: Aimbot)
             // ============================================================
-            if (ImGui::BeginTabItem(X("[ COMBAT ]")))
+            if (ImGui::BeginTabItem(X("[ JANG ]")))
             {
                 ImGui::Spacing();
 
@@ -413,19 +415,19 @@ void Gui::Render()
 
                 if (g_License.HasFeature(ETier::MID))
                 {
-                    ImGui::Checkbox(X("Enable Triggerbot"), &CONFIG_GET(bool, g_Variables.m_TriggerBot.m_bEnableTriggerbot));
+                    ImGui::Checkbox(X("Triggerbot yoqish"), &CONFIG_GET(bool, g_Variables.m_TriggerBot.m_bEnableTriggerbot));
                     ImGui::Spacing();
 
-                    KeyBind("Hold Key:", CONFIG_GET(int, g_Variables.m_TriggerBot.m_iTriggerKey), "trigkey");
+                    KeyBind("Ushlab turish:", CONFIG_GET(int, g_Variables.m_TriggerBot.m_iTriggerKey), "trigkey");
                     ImGui::PushStyleColor(ImGuiCol_Text, C(100, 100, 120));
                     ImGui::Text("  Auto (0) = hech narsa ushlamay otadi");
                     ImGui::PopStyleColor();
 
                     ImGui::SetNextItemWidth(200.f);
-                    ImGui::SliderFloat(X("Shot Delay"), &CONFIG_GET(float, g_Variables.m_TriggerBot.m_flShotDelay), 0.f, 300.f, "%.0f ms");
+                    ImGui::SliderFloat(X("Otish kechikishi"), &CONFIG_GET(float, g_Variables.m_TriggerBot.m_flShotDelay), 0.f, 300.f, "%.0f ms");
 
-                    ImGui::Checkbox(X("Ignore Teammates##trig"), &CONFIG_GET(bool, g_Variables.m_TriggerBot.m_bIgnoreTeammates));
-                    ImGui::Checkbox(X("Only Visible (no wallbang)"), &CONFIG_GET(bool, g_Variables.m_TriggerBot.m_bOnlyVisible));
+                    ImGui::Checkbox(X("Jamoani e'tiborsiz##trig"), &CONFIG_GET(bool, g_Variables.m_TriggerBot.m_bIgnoreTeammates));
+                    ImGui::Checkbox(X("Faqat ko'ringanlar (devordan emas)"), &CONFIG_GET(bool, g_Variables.m_TriggerBot.m_bOnlyVisible));
                 }
                 else
                 {
@@ -440,26 +442,26 @@ void Gui::Render()
 
                 if (g_License.HasFeature(ETier::PRO))
                 {
-                    ImGui::Checkbox(X("Enable Aimbot"), &CONFIG_GET(bool, g_Variables.m_AimBot.m_bEnableAimbot));
+                    ImGui::Checkbox(X("Aimbot yoqish"), &CONFIG_GET(bool, g_Variables.m_AimBot.m_bEnableAimbot));
                     ImGui::Spacing();
 
-                    KeyBind("Aim Key:", CONFIG_GET(int, g_Variables.m_AimBot.m_iAimKey), "aimkey");
+                    KeyBind("Nishon tugmasi:", CONFIG_GET(int, g_Variables.m_AimBot.m_iAimKey), "aimkey");
 
                     ImGui::SetNextItemWidth(200.f);
                     ImGui::SliderFloat(X("FOV"), &CONFIG_GET(float, g_Variables.m_AimBot.m_flFOV), 0.5f, 30.f, "%.1f deg");
 
                     ImGui::SetNextItemWidth(200.f);
-                    ImGui::SliderFloat(X("Smooth"), &CONFIG_GET(float, g_Variables.m_AimBot.m_flSmooth), 1.f, 20.f, "%.1f");
+                    ImGui::SliderFloat(X("Silliqlik"), &CONFIG_GET(float, g_Variables.m_AimBot.m_flSmooth), 1.f, 20.f, "%.1f");
                     ImGui::PushStyleColor(ImGuiCol_Text, C(120, 120, 140));
-                    ImGui::SameLine(); ImGui::Text("(1=instant, 10=smooth)");
+                    ImGui::SameLine(); ImGui::Text("(1=tez, 10=silliq)");
                     ImGui::PopStyleColor();
 
-                    static const char* hitboxNames[] = { "Head", "Neck", "Chest" };
+                    static const char* hitboxNames[] = { "Bosh", "Bo'yin", "Ko'krak" };
                     ImGui::SetNextItemWidth(140.f);
-                    ImGui::Combo(X("Hitbox"), &CONFIG_GET(int, g_Variables.m_AimBot.m_iHitbox), hitboxNames, 3);
+                    ImGui::Combo(X("Nishon joyi"), &CONFIG_GET(int, g_Variables.m_AimBot.m_iHitbox), hitboxNames, 3);
 
-                    ImGui::Checkbox(X("Ignore Teammates##aim"), &CONFIG_GET(bool, g_Variables.m_AimBot.m_bIgnoreTeammates));
-                    ImGui::Checkbox(X("Draw FOV Circle"),       &CONFIG_GET(bool, g_Variables.m_AimBot.m_bDrawFOV));
+                    ImGui::Checkbox(X("Jamoani e'tiborsiz##aim"), &CONFIG_GET(bool, g_Variables.m_AimBot.m_bIgnoreTeammates));
+                    ImGui::Checkbox(X("FOV doirasini chizish"),       &CONFIG_GET(bool, g_Variables.m_AimBot.m_bDrawFOV));
                 }
                 else
                 {
@@ -479,20 +481,184 @@ void Gui::Render()
                 ImGui::Spacing();
                 SectionTitle("2D Radar");
 
-                ImGui::Checkbox(X("Enable Radar"), &CONFIG_GET(bool, g_Variables.m_Radar.m_bEnableRadar));
+                ImGui::Checkbox(X("Radar yoqish"), &CONFIG_GET(bool, g_Variables.m_Radar.m_bEnableRadar));
 
                 if (CONFIG_GET(bool, g_Variables.m_Radar.m_bEnableRadar))
                 {
                     ImGui::Spacing();
                     ImGui::SetNextItemWidth(180.f);
-                    ImGui::SliderFloat(X("Radar Size"),   &CONFIG_GET(float, g_Variables.m_Radar.m_flRadarSize),  100.f, 400.f, "%.0f px");
+                    ImGui::SliderFloat(X("Radar kattaligi"),   &CONFIG_GET(float, g_Variables.m_Radar.m_flRadarSize),  100.f, 400.f, "%.0f px");
                     ImGui::SetNextItemWidth(180.f);
-                    ImGui::SliderFloat(X("Radar Range"),  &CONFIG_GET(float, g_Variables.m_Radar.m_flRadarRange), 500.f, 5000.f, "%.0f u");
+                    ImGui::SliderFloat(X("Radar masofasi"),  &CONFIG_GET(float, g_Variables.m_Radar.m_flRadarRange), 500.f, 5000.f, "%.0f u");
                     ImGui::SetNextItemWidth(180.f);
-                    ImGui::SliderFloat(X("Position X"),   &CONFIG_GET(float, g_Variables.m_Radar.m_flRadarX),    0.f, 1920.f, "%.0f");
+                    ImGui::SliderFloat(X("X pozitsiya"),   &CONFIG_GET(float, g_Variables.m_Radar.m_flRadarX),    0.f, 1920.f, "%.0f");
                     ImGui::SetNextItemWidth(180.f);
-                    ImGui::SliderFloat(X("Position Y"),   &CONFIG_GET(float, g_Variables.m_Radar.m_flRadarY),    0.f, 1080.f, "%.0f");
-                    ImGui::Checkbox(X("Rotate with View"), &CONFIG_GET(bool, g_Variables.m_Radar.m_bRadarRotate));
+                    ImGui::SliderFloat(X("Y pozitsiya"),   &CONFIG_GET(float, g_Variables.m_Radar.m_flRadarY),    0.f, 1080.f, "%.0f");
+                    ImGui::Checkbox(X("Qarash bilan aylantirish"), &CONFIG_GET(bool, g_Variables.m_Radar.m_bRadarRotate));
+                }
+
+                ImGui::EndTabItem();
+            }
+
+            // ============================================================
+            // INVENTORY  (Skin Changer)
+            // ============================================================
+            if (ImGui::BeginTabItem(X("[ INVENTAR ]")))
+            {
+                ImGui::Spacing();
+                SectionTitle("Skin o'zgartirish");
+
+                ImGui::Checkbox(X("Skin o'zgartirish yoqish"), &SkinChanger::m_bEnabled);
+                ImGui::PushStyleColor(ImGuiCol_Text, C(100, 100, 120));
+                ImGui::Text("  Qo'ldagi qurollar skinini o'zgartiradi");
+                ImGui::PopStyleColor();
+
+                if (SkinChanger::m_bEnabled)
+                {
+                    ImGui::Spacing();
+                    ImGui::Separator();
+                    ImGui::Spacing();
+
+                    static int nSelectedWeapon = 0;
+
+                    ImGui::BeginColumns(X("##SkinCols"), 2, ImGuiColumnsFlags_NoResize);
+                    ImGui::SetColumnWidth(0, 180.f);
+                    {
+                        // === LEFT: Weapon list ===
+                        ImGui::PushStyleColor(ImGuiCol_Text, C(0, 220, 70));
+                        ImGui::TextUnformatted("Qurollar");
+                        ImGui::PopStyleColor();
+                        ImGui::Spacing();
+
+                        if (ImGui::BeginListBox(X("##WeaponList"), ImVec2(-1, 340.f)))
+                        {
+                            for (int i = 0; i < SkinChanger::g_nWeaponCategoryCount; i++)
+                            {
+                                WeaponCategory_t& cat = SkinChanger::g_vecWeaponCategories[i];
+                                WeaponSkinConfig_t& cfg = SkinChanger::GetWeaponConfig(cat.m_nDefIndex);
+
+                                // Mark weapons that have a skin selected
+                                char label[64];
+                                if (cfg.m_nPaintKit != 0)
+                                    snprintf(label, sizeof(label), "[*] %s", cat.m_szName);
+                                else
+                                    snprintf(label, sizeof(label), "    %s", cat.m_szName);
+
+                                if (ImGui::Selectable(label, i == nSelectedWeapon))
+                                    nSelectedWeapon = i;
+                            }
+                            ImGui::EndListBox();
+                        }
+                    }
+                    ImGui::NextColumn();
+                    {
+                        // === RIGHT: Skin selector ===
+                        if (nSelectedWeapon >= 0 && nSelectedWeapon < SkinChanger::g_nWeaponCategoryCount)
+                        {
+                            WeaponCategory_t& cat = SkinChanger::g_vecWeaponCategories[nSelectedWeapon];
+                            WeaponSkinConfig_t& cfg = SkinChanger::GetWeaponConfig(cat.m_nDefIndex);
+
+                            ImGui::PushStyleColor(ImGuiCol_Text, C(0, 220, 70));
+                            ImGui::Text("%s - Skinlar", cat.m_szName);
+                            ImGui::PopStyleColor();
+                            ImGui::Spacing();
+
+                            // Skin dropdown
+                            const char* szCurrentSkin = "Default";
+                            for (int j = 0; j < cat.m_nSkinCount; j++)
+                            {
+                                if (cat.m_pSkins[j].m_nPaintKit == cfg.m_nPaintKit)
+                                {
+                                    szCurrentSkin = cat.m_pSkins[j].m_szName;
+                                    break;
+                                }
+                            }
+
+                            ImGui::SetNextItemWidth(-1);
+                            if (ImGui::BeginCombo(X("##SkinCombo"), szCurrentSkin))
+                            {
+                                for (int j = 0; j < cat.m_nSkinCount; j++)
+                                {
+                                    bool bSelected = (cat.m_pSkins[j].m_nPaintKit == cfg.m_nPaintKit);
+                                    char skinLabel[96];
+                                    if (cat.m_pSkins[j].m_nPaintKit == 0)
+                                        snprintf(skinLabel, sizeof(skinLabel), "Default (off)");
+                                    else
+                                        snprintf(skinLabel, sizeof(skinLabel), "[%d] %s", cat.m_pSkins[j].m_nPaintKit, cat.m_pSkins[j].m_szName);
+
+                                    if (ImGui::Selectable(skinLabel, bSelected))
+                                        cfg.m_nPaintKit = cat.m_pSkins[j].m_nPaintKit;
+
+                                    if (bSelected)
+                                        ImGui::SetItemDefaultFocus();
+                                }
+                                ImGui::EndCombo();
+                            }
+
+                            ImGui::Spacing();
+                            ImGui::Spacing();
+
+                            // Wear slider
+                            SectionTitle("Sifat (Wear)");
+                            ImGui::SetNextItemWidth(-1);
+                            ImGui::SliderFloat(X("##Wear"), &cfg.m_flWear, 0.0001f, 1.0f, "%.4f");
+
+                            ImGui::PushStyleColor(ImGuiCol_Text, C(100, 100, 120));
+                            if (cfg.m_flWear < 0.07f)       ImGui::Text("  Factory New");
+                            else if (cfg.m_flWear < 0.15f)  ImGui::Text("  Minimal Wear");
+                            else if (cfg.m_flWear < 0.38f)  ImGui::Text("  Field-Tested");
+                            else if (cfg.m_flWear < 0.45f)  ImGui::Text("  Well-Worn");
+                            else                             ImGui::Text("  Battle-Scarred");
+                            ImGui::PopStyleColor();
+
+                            ImGui::Spacing();
+
+                            // Seed
+                            SectionTitle("Pattern Seed");
+                            ImGui::SetNextItemWidth(120.f);
+                            ImGui::InputInt(X("##Seed"), &cfg.m_nSeed);
+                            if (cfg.m_nSeed < 0) cfg.m_nSeed = 0;
+                            if (cfg.m_nSeed > 1000) cfg.m_nSeed = 1000;
+
+                            ImGui::Spacing();
+
+                            // StatTrak
+                            SectionTitle("StatTrak");
+                            bool bStatTrak = (cfg.m_nStatTrak >= 0);
+                            if (ImGui::Checkbox(X("Enable StatTrak##st"), &bStatTrak))
+                                cfg.m_nStatTrak = bStatTrak ? 0 : -1;
+
+                            if (cfg.m_nStatTrak >= 0)
+                            {
+                                ImGui::SetNextItemWidth(120.f);
+                                ImGui::InputInt(X("##StatTrakVal"), &cfg.m_nStatTrak);
+                                if (cfg.m_nStatTrak < 0) cfg.m_nStatTrak = 0;
+                            }
+
+                            ImGui::Spacing();
+                            ImGui::Spacing();
+
+                            // Reset button
+                            ImGui::PushStyleColor(ImGuiCol_Button,        C(120, 30, 30));
+                            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, C(180, 50, 50));
+                            ImGui::PushStyleColor(ImGuiCol_ButtonActive,  C(220, 60, 60));
+                            if (ImGui::Button(X("Reset##skinreset"), ImVec2(120.f, 0.f)))
+                            {
+                                cfg.m_nPaintKit = 0;
+                                cfg.m_flWear    = 0.0001f;
+                                cfg.m_nSeed     = 0;
+                                cfg.m_nStatTrak = -1;
+                            }
+                            ImGui::PopStyleColor(3);
+
+                            ImGui::SameLine();
+
+                            // Reset ALL
+                            if (ImGui::Button(X("Reset All##skinresetall"), ImVec2(120.f, 0.f)))
+                                SkinChanger::m_mapWeaponConfigs.clear();
+                        }
+                    }
+                    ImGui::EndColumns();
                 }
 
                 ImGui::EndTabItem();
@@ -501,10 +667,10 @@ void Gui::Render()
             // ============================================================
             // CONFIGS  (all tiers)
             // ============================================================
-            if (ImGui::BeginTabItem(X("[ CONFIGS ]")))
+            if (ImGui::BeginTabItem(X("[ SOZLAMALAR ]")))
             {
                 ImGui::Spacing();
-                SectionTitle("Config Manager");
+                SectionTitle("Sozlamalar boshqaruvi");
 
                 ImGui::BeginColumns(X("##CfgCols"), 2, ImGuiColumnsFlags_NoResize);
                 {
@@ -523,22 +689,22 @@ void Gui::Render()
                     ImGui::NextColumn();
 
                     static std::string strCfgName;
-                    ImGui::InputTextWithHint(X("##cfgfile"), X("config name..."), &strCfgName);
+                    ImGui::InputTextWithHint(X("##cfgfile"), X("config nomi..."), &strCfgName);
 
-                    if (ImGui::Button(X("Create"), ImVec2(120.f, 0.f)))
+                    if (ImGui::Button(X("Yaratish"), ImVec2(120.f, 0.f)))
                     {
                         Config::Save(strCfgName);
                         strCfgName.clear();
                         Config::Refresh();
                     }
-                    if (ImGui::Button(X("Refresh"), ImVec2(120.f, 0.f))) Config::Refresh();
+                    if (ImGui::Button(X("Yangilash"), ImVec2(120.f, 0.f))) Config::Refresh();
 
                     if (nSelected != -1)
                     {
                         ImGui::Spacing();
-                        if (ImGui::Button(X("Save"),   ImVec2(120.f, 0.f))) Config::Save(Config::m_vecFileNames.at(nSelected));
-                        if (ImGui::Button(X("Load"),   ImVec2(120.f, 0.f))) Config::Load(Config::m_vecFileNames.at(nSelected));
-                        if (ImGui::Button(X("Delete"), ImVec2(120.f, 0.f)))
+                        if (ImGui::Button(X("Saqlash"),   ImVec2(120.f, 0.f))) Config::Save(Config::m_vecFileNames.at(nSelected));
+                        if (ImGui::Button(X("Yuklash"),   ImVec2(120.f, 0.f))) Config::Load(Config::m_vecFileNames.at(nSelected));
+                        if (ImGui::Button(X("O'chirish"), ImVec2(120.f, 0.f)))
                         {
                             Config::Remove(Config::m_vecFileNames.at(nSelected));
                             Config::Refresh();
@@ -553,27 +719,27 @@ void Gui::Render()
             // ============================================================
             // SETTINGS  (all tiers)
             // ============================================================
-            if (ImGui::BeginTabItem(X("[ SETTINGS ]")))
+            if (ImGui::BeginTabItem(X("[ UMUMIY ]")))
             {
                 ImGui::Spacing();
-                SectionTitle("General");
+                SectionTitle("Asosiy");
 
-                ImGui::Text("Menu Key (VK hex):");
+                ImGui::Text("Menyu tugmasi:");
                 ImGui::SetNextItemWidth(120.f);
                 ImGui::InputInt(X("##menukey"), &CONFIG_GET(int, g_Variables.m_Gui.m_iMenuKey));
 
-                ImGui::Text("Unload Key (VK hex):");
+                ImGui::Text("Yopish tugmasi:");
                 ImGui::SetNextItemWidth(120.f);
                 ImGui::InputInt(X("##unloadkey"), &CONFIG_GET(int, g_Variables.m_Gui.m_iUnloadKey));
 
-                ImGui::Checkbox(X("Exclude from Desktop Capture"),
+                ImGui::Checkbox(X("Ekran yozishdan yashirish"),
                     &CONFIG_GET(bool, g_Variables.m_Gui.m_bExcludeFromDesktopCapture));
 
                 ImGui::Spacing();
                 ImGui::Spacing();
-                SectionTitle("Misc Features");
+                SectionTitle("Qo'shimcha xususiyatlar");
 
-                ImGui::Checkbox(X("Anti-Flash"), &CONFIG_GET(bool, g_Variables.m_Misc.m_bAntiFlash));
+                ImGui::Checkbox(X("Flash himoya"), &CONFIG_GET(bool, g_Variables.m_Misc.m_bAntiFlash));
                 ImGui::PushStyleColor(ImGuiCol_Text, C(100, 100, 120));
                 ImGui::Text("  Flash grenade effektini yo'q qiladi");
                 ImGui::PopStyleColor();
@@ -583,26 +749,31 @@ void Gui::Render()
                 ImGui::Text("  Bomba portlashigacha qolgan vaqtni ko'rsatadi");
                 ImGui::PopStyleColor();
 
-                ImGui::Checkbox(X("Spectator List"), &CONFIG_GET(bool, g_Variables.m_SpectatorList.m_bEnableSpectatorList));
+                ImGui::Checkbox(X("Watermark"), &CONFIG_GET(bool, g_Variables.m_Misc.m_bWatermark));
+                ImGui::PushStyleColor(ImGuiCol_Text, C(100, 100, 120));
+                ImGui::Text("  Ekranda cheat nomi va FPS ko'rsatib turadi");
+                ImGui::PopStyleColor();
+
+                ImGui::Checkbox(X("Tomosha qiluvchilar"), &CONFIG_GET(bool, g_Variables.m_SpectatorList.m_bEnableSpectatorList));
                 ImGui::PushStyleColor(ImGuiCol_Text, C(100, 100, 120));
                 ImGui::Text("  Sizni kim tomosha qilayotganini ko'rsatadi");
                 ImGui::PopStyleColor();
 
                 ImGui::Spacing();
                 ImGui::Spacing();
-                SectionTitle("License Info");
+                SectionTitle("Litsenziya ma'lumoti");
 
                 ImGui::PushStyleColor(ImGuiCol_Text, g_License.GetTierColor());
-                ImGui::Text("  Tier:    %s", g_License.GetTierName());
-                ImGui::Text("  User:    %s", g_License.m_strUser.c_str());
-                ImGui::Text("  Status:  %s", g_License.m_strExpiry.c_str());
+                ImGui::Text("  Daraja:    %s", g_License.GetTierName());
+                ImGui::Text("  Foydalanuvchi: %s", g_License.m_strUser.c_str());
+                ImGui::Text("  Holat:     %s", g_License.m_strExpiry.c_str());
                 ImGui::PopStyleColor();
 
                 ImGui::Spacing();
                 ImGui::PushStyleColor(ImGuiCol_Text, C(100, 120, 110));
-                ImGui::Text("  To upgrade place a key.txt file next to the exe.");
-                ImGui::Text("  Key format:  SH-XXXXXXXX-M  (MID)  or  SH-XXXXXXXX-P  (PRO)");
-                ImGui::Text("  Buy keys at: shifthub.uz");
+                ImGui::Text("  Yangilash uchun key.txt faylini exe yoniga qo'ying.");
+                ImGui::Text("  Kalit formati:  SH-XXXXXXXX-M  (MID)  yoki  SH-XXXXXXXX-P  (PRO)");
+                ImGui::Text("  Kalit olish: shifthub.uz");
                 ImGui::PopStyleColor();
 
                 ImGui::EndTabItem();

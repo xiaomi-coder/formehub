@@ -117,3 +117,4 @@
 #include "features/triggerbot/Triggerbot.h"
 #include "features/radar/Radar.h"
 #include "features/bhop/Bhop.h"
+#include "features/skinchanger/SkinChanger.h"

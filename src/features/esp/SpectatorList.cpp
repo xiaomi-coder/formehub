@@ -107,13 +107,13 @@ void SpectatorList::Render(const std::vector<EntityObject_t>& vecEntities)
         Color(10, 10, 10, 200),
         DRAW_RECT_FILLED, Color(255, 60, 60, 180), 4.f);
 
-    // Header text: "SPECTATORS"
+    // Header text: "TOMOSHABINLAR"
     float flTextX = flX + flPadding;
     float flTextY = flY + 4.f;
 
     Draw::AddText(Fonts::ESP, 12.f,
         ImVec2(flTextX, flTextY),
-        X("SPECTATORS"),
+        X("TOMOSHABINLAR"),
         Color(255, 80, 80, 255), DRAW_TEXT_NONE);
 
     // Count badge

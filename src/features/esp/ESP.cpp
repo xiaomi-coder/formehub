@@ -441,6 +441,51 @@ void ESP::RenderPlayer(CCSPlayerController* pController, C_CSPlayerPawn* pPawn)
         }
     }
 
+    // --- Has C4 Warning ---
+    if (CONFIG_GET(bool, g_Variables.m_PlayerVisuals.m_bDrawHasC4))
+    {
+        CCSPlayer_WeaponServices* pWeaponServices = pPawn->m_pWeaponServices();
+        if (pWeaponServices && reinterpret_cast<std::uintptr_t>(pWeaponServices) > 0x1000)
+        {
+            C_NetworkUtlVectorBaseSimple hWeapons = pWeaponServices->m_hMyWeapons();
+            if (hWeapons.m_nSize > 0 && hWeapons.m_nSize <= 10 && hWeapons.m_pData > 0x1000)
+            {
+                bool bHasC4 = false;
+                for (int i = 0; i < hWeapons.m_nSize; i++)
+                {
+                    CHandle<C_BasePlayerWeapon> hWeaponHandle = g_Memory.ReadMemory<CHandle<C_BasePlayerWeapon>>(hWeapons.m_pData + (i * 0x4));
+                    if (hWeaponHandle.IsValid())
+                    {
+                        C_BasePlayerWeapon* pWeapon = hWeaponHandle.Get();
+                        if (pWeapon && reinterpret_cast<std::uintptr_t>(pWeapon) > 0x1000)
+                        {
+                            if (pWeapon->GetItemDefinitionIndex() == 49) // 49 = WEAPON_C4
+                            {
+                                bHasC4 = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                if (bHasC4)
+                {
+                    ImVec2 textSize = Fonts::ESP->CalcTextSizeA(Fonts::ESP->FontSize + 2.f, FLT_MAX, 0.f, "BOMBA");
+                    float cx = (vecMin.x + vecMax.x) * 0.5f - textSize.x * 0.5f;
+                    // Draw red 'BOMBA' text above the player name
+                    float flY = vecMin.y - textSize.y - 1.f;
+                    if (CONFIG_GET(bool, g_Variables.m_PlayerVisuals.m_bDrawName))
+                        flY -= Fonts::ESP->FontSize + 2.f;
+
+                    Draw::AddText(Fonts::ESP, Fonts::ESP->FontSize + 2.f,
+                        ImVec2(cx, flY),
+                        "BOMBA", Color(255, 30, 30, 255),
+                        DRAW_TEXT_DROPSHADOW, Color(0, 0, 0, 220));
+                }
+            }
+        }
+    }
+
     // --- Head dot ---
     if (CONFIG_GET(bool, g_Variables.m_PlayerVisuals.m_bDrawHeadDot))
         DrawHeadDot(pPawn);
