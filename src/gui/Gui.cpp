@@ -754,6 +754,16 @@ void Gui::Render()
                 ImGui::Text("  Ekranda cheat nomi va FPS ko'rsatib turadi");
                 ImGui::PopStyleColor();
 
+                ImGui::Checkbox(X("Sniper Crosshair (qoq markaz)"), &CONFIG_GET(bool, g_Variables.m_Misc.m_bSniperCrosshair));
+                ImGui::PushStyleColor(ImGuiCol_Text, C(100, 100, 120));
+                ImGui::Text("  Snayper (AWP/SSG08) orzuqilmasdan (scope ochiqmas) turganda chizadi");
+                ImGui::PopStyleColor();
+
+                ImGui::Checkbox(X("Hit Sound (Tegish ovozi)"), &CONFIG_GET(bool, g_Variables.m_Misc.m_bHitSound));
+                ImGui::PushStyleColor(ImGuiCol_Text, C(100, 100, 120));
+                ImGui::Text("  Dushmanga o'q tekkanda 'Tink' ovozini chiqarish");
+                ImGui::PopStyleColor();
+
                 ImGui::Checkbox(X("Tomosha qiluvchilar"), &CONFIG_GET(bool, g_Variables.m_SpectatorList.m_bEnableSpectatorList));
                 ImGui::PushStyleColor(ImGuiCol_Text, C(100, 100, 120));
                 ImGui::Text("  Sizni kim tomosha qilayotganini ko'rsatadi");

@@ -116,6 +116,21 @@ void RenderThread()
             if (CONFIG_GET(bool, g_Variables.m_SpectatorList.m_bEnableSpectatorList))
                 SpectatorList::Render(vecEntities);
 
+            // ===== SNIPER CROSSHAIR =====
+            if (CONFIG_GET(bool, g_Variables.m_Misc.m_bSniperCrosshair))
+            {
+                C_CSPlayerPawn* pLocalPawn = g_Globals.m_LocalPlayer.m_pPlayerPawn;
+                if (pLocalPawn && pLocalPawn->IsAlive() && !pLocalPawn->m_bIsScoped())
+                {
+                    std::string weaponName = pLocalPawn->m_strActiveWeaponName();
+                    if (weaponName == "awp" || weaponName == "ssg08" || weaponName == "scar20" || weaponName == "g3sg1")
+                    {
+                        ImVec2 center(Window::m_iWidth * 0.5f, Window::m_iHeight * 0.5f);
+                        Draw::AddCircle(center, 2.5f, Color(255, 30, 30, 255), 12, DRAW_CIRCLE_FILLED | DRAW_CIRCLE_OUTLINE, Color(0, 0, 0, 200), 1.5f);
+                    }
+                }
+            }
+
             // ===== WATERMARK =====
             if (CONFIG_GET(bool, g_Variables.m_Misc.m_bWatermark))
             {
@@ -346,6 +361,44 @@ void TickThread()
             // ===== TRIGGERBOT =====
             if (g_License.HasFeature(ETier::MID) && CONFIG_GET(bool, g_Variables.m_TriggerBot.m_bEnableTriggerbot))
                 Triggerbot::Run(vecEntities);
+
+            // ===== HIT SOUND =====
+            if (CONFIG_GET(bool, g_Variables.m_Misc.m_bHitSound))
+            {
+                static std::map<std::uintptr_t, int> s_mapEnemyHP;
+                
+                for (EntityObject_t& object : vecEntities)
+                {
+                    if (object.m_eType != EEntityType::ENTITY_PLAYER) continue;
+
+                    CCSPlayerController* pController = reinterpret_cast<CCSPlayerController*>(object.m_pEntity);
+                    if (!pController || pController->m_bIsLocalPlayerController()) continue;
+
+                    C_CSPlayerPawn* pPawn = reinterpret_cast<C_CSPlayerPawn*>(pController->m_hPawn().Get());
+                    if (!pPawn || !pPawn->IsAlive())
+                    {
+                        if (pPawn)
+                            s_mapEnemyHP.erase(reinterpret_cast<std::uintptr_t>(pPawn));
+                        continue;
+                    }
+
+                    if (pPawn->m_iTeamNum() == g_Globals.m_LocalPlayer.m_pPlayerPawn->m_iTeamNum())
+                        continue;
+
+                    int iHealth = pPawn->m_iHealth();
+                    std::uintptr_t uPawnAddress = reinterpret_cast<std::uintptr_t>(pPawn);
+
+                    auto it = s_mapEnemyHP.find(uPawnAddress);
+                    if (it != s_mapEnemyHP.end())
+                    {
+                        if (it->second > iHealth && iHealth > 0)
+                        {
+                            PlaySoundA("C:\\Windows\\Media\\Windows Default.wav", NULL, SND_ASYNC | SND_FILENAME);
+                        }
+                    }
+                    s_mapEnemyHP[uPawnAddress] = iHealth;
+                }
+            }
 
             // ===== SKIN CHANGER =====
             SkinChanger::Run();

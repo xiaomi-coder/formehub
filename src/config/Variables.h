@@ -88,9 +88,11 @@ public:
 	// ================== MISC =========================
 	struct MiscVariables_t
 	{
-		CONFIG_ADD_VARIABLE(bool, m_bAntiFlash,    false);
-		CONFIG_ADD_VARIABLE(bool, m_bC4Timer,      false);
-		CONFIG_ADD_VARIABLE(bool, m_bWatermark,    true);
+		CONFIG_ADD_VARIABLE(bool, m_bAntiFlash,       false);
+		CONFIG_ADD_VARIABLE(bool, m_bC4Timer,         false);
+		CONFIG_ADD_VARIABLE(bool, m_bWatermark,       true);
+		CONFIG_ADD_VARIABLE(bool, m_bSniperCrosshair, false);
+		CONFIG_ADD_VARIABLE(bool, m_bHitSound,        false);
 	}; MiscVariables_t m_Misc;
 
 	// ================== HOTKEYS =======================
