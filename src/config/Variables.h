@@ -41,7 +41,8 @@ public:
 	struct TriggerBotVariables_t
 	{
 		CONFIG_ADD_VARIABLE(bool,  m_bEnableTriggerbot, false);
-		CONFIG_ADD_VARIABLE(int,   m_iTriggerKey,       0); // 0 = auto (no hold key)
+		CONFIG_ADD_VARIABLE(bool,  m_bAutoShoot,        false); // Use checkbox for Auto Mode instead of key 0
+		CONFIG_ADD_VARIABLE(int,   m_iTriggerKey,       0);     
 		CONFIG_ADD_VARIABLE(float, m_flShotDelay,       50.0f);
 		CONFIG_ADD_VARIABLE(bool,  m_bIgnoreTeammates,  true);
 		CONFIG_ADD_VARIABLE(bool,  m_bOnlyVisible,      true); // don't shoot through walls

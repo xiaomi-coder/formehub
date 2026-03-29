@@ -52,10 +52,14 @@ void Radar::Render(const std::vector<EntityObject_t>& vecEntities)
         if (obj.m_eType != EEntityType::ENTITY_PLAYER) continue;
 
         CCSPlayerController* pCtrl = reinterpret_cast<CCSPlayerController*>(obj.m_pEntity);
-        if (!pCtrl || pCtrl->m_bIsLocalPlayerController()) continue;
+        if (!pCtrl) continue;
 
-        C_CSPlayerPawn* pPawn = reinterpret_cast<C_CSPlayerPawn*>(pCtrl->m_hPawn().Get());
-        if (!pPawn || !pPawn->IsAlive()) continue;
+        // Safe null check before accessing pawn
+        try {
+            if (pCtrl->m_bIsLocalPlayerController()) continue;
+            auto hPawn = pCtrl->m_hPawn();
+            C_CSPlayerPawn* pPawn = reinterpret_cast<C_CSPlayerPawn*>(hPawn.Get());
+            if (!pPawn || !pPawn->IsAlive()) continue;
 
         CGameSceneNode* pNode = pPawn->m_pGameSceneNode();
         if (!pNode) continue;
@@ -98,7 +102,16 @@ void Radar::Render(const std::vector<EntityObject_t>& vecEntities)
         // Player name (small)
         std::string szName = pCtrl->m_strSanitizedPlayerName();
         if (!szName.empty() && Fonts::ESP)
+        {
+            // Remove invalid characters to prevent ImGui UTF-8 crash
+            szName.erase(std::remove_if(szName.begin(), szName.end(), [](unsigned char c) {
+                return c < 32 || c > 126;
+            }), szName.end());
+
             pDL->AddText(Fonts::ESP, 8.f, ImVec2(screenX + 5.f, screenY - 4.f),
                          colDot, szName.c_str());
+        }
+
+        } catch (...) { continue; } // safety catch for invalid memory
     }
 }

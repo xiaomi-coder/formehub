@@ -193,15 +193,25 @@ static void KeyBind(const char* label, int& key, const char* id)
         ImGui::Button(buf, ImVec2(140.f, 0.f));
         ImGui::PopStyleColor(3);
 
-        // Scan all keys
-        for (int i = 1; i < 256; i++)
+        // Scan all keys (BUT wait 0.2s before accepting, so we don't catch the left-click used to press this button)
+        if (s_flListenTimer < 4.8f) // 5.0f - 0.2f
         {
-            if (i == VK_ESCAPE)         { s_pListening = nullptr; break; }  // ESC = cancel
-            if (GetAsyncKeyState(i) & 0x0001)
+            for (int i = 1; i < 256; i++)
             {
-                key = i;
-                s_pListening = nullptr;
-                break;
+                if (GetAsyncKeyState(i) & 0x8000)
+                {
+                    if (i == VK_ESCAPE)
+                    {
+                        // ESC always cancels
+                        s_pListening = nullptr;
+                    }
+                    else
+                    {
+                        key = i;
+                        s_pListening = nullptr;
+                    }
+                    break;
+                }
             }
         }
     }
@@ -418,10 +428,22 @@ void Gui::Render()
                     ImGui::Checkbox(X("Triggerbot yoqish"), &CONFIG_GET(bool, g_Variables.m_TriggerBot.m_bEnableTriggerbot));
                     ImGui::Spacing();
 
-                    KeyBind("Ushlab turish:", CONFIG_GET(int, g_Variables.m_TriggerBot.m_iTriggerKey), "trigkey");
-                    ImGui::PushStyleColor(ImGuiCol_Text, C(100, 100, 120));
-                    ImGui::Text("  Auto (0) = hech narsa ushlamay otadi");
-                    ImGui::PopStyleColor();
+                    bool& bAutoShoot = CONFIG_GET(bool, g_Variables.m_TriggerBot.m_bAutoShoot);
+                    ImGui::Checkbox(X("Avto otish (tugmasiz)"), &bAutoShoot);
+
+                    if (!bAutoShoot)
+                    {
+                        KeyBind("Ushlab turish:", CONFIG_GET(int, g_Variables.m_TriggerBot.m_iTriggerKey), "trigkey");
+                        ImGui::PushStyleColor(ImGuiCol_Text, C(100, 100, 120));
+                        ImGui::Text("  OTISH kerak bo'lganda shu tugmani bosing");
+                        ImGui::PopStyleColor();
+                    }
+                    else
+                    {
+                        ImGui::PushStyleColor(ImGuiCol_Text, C(0, 200, 65));
+                        ImGui::Text("  [+] Avtomatik otadi (dushman nishonga tushganda)");
+                        ImGui::PopStyleColor();
+                    }
 
                     ImGui::SetNextItemWidth(200.f);
                     ImGui::SliderFloat(X("Otish kechikishi"), &CONFIG_GET(float, g_Variables.m_TriggerBot.m_flShotDelay), 0.f, 300.f, "%.0f ms");

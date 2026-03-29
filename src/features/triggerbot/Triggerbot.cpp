@@ -77,9 +77,12 @@ bool Triggerbot::IsEnemyUnderCrosshair(const std::vector<EntityObject_t>& vecEnt
 // -----------------------------------------------------------------------
 void Triggerbot::Run(const std::vector<EntityObject_t>& vecEntities)
 {
-    int iTriggerKey = CONFIG_GET(int, g_Variables.m_TriggerBot.m_iTriggerKey);
-    // iTriggerKey == 0 means auto-fire (no hold key required)
-    if (iTriggerKey != 0 && !(GetAsyncKeyState(iTriggerKey) & 0x8000)) return;
+    bool bAutoShoot = CONFIG_GET(bool, g_Variables.m_TriggerBot.m_bAutoShoot);
+    int iTriggerKey  = CONFIG_GET(int, g_Variables.m_TriggerBot.m_iTriggerKey);
+
+    // If auto-shoot is NOT enabled, we MUST have the key pressed (unless key is 0 which was legacy auto)
+    if (!bAutoShoot && iTriggerKey != 0 && !(GetAsyncKeyState(iTriggerKey) & 0x8000)) 
+        return;
 
     if (!IsEnemyUnderCrosshair(vecEntities)) return;
 

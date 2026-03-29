@@ -40,7 +40,7 @@ void SetThreadPriorityWrapper()
             throw std::runtime_error(X("failed to get thread priority"));
         if (nPri != THREAD_PRIORITY_HIGHEST)
             SetThreadPriority(hThread, THREAD_PRIORITY_HIGHEST);
-        CloseHandle(hThread);
+        // GetCurrentThread() returns a pseudo-handle — do NOT close it
     }
     else
         throw std::runtime_error(X("failed to set thread priority"));
@@ -72,7 +72,7 @@ void RenderThread()
     {
         Draw::ClearDrawData();
 
-        if (!g_Memory.IsWindowInForeground(X("Counter-Strike 2")))
+        if (!g_Memory.IsWindowInForeground(X("Counter-Strike 2"), g_Globals.m_Instance))
         {
             Draw::SwapDrawData();
             g_Utilities.Sleep(1000.0f);
@@ -83,7 +83,6 @@ void RenderThread()
         std::vector<EntityObject_t> vecEntities;
         vecEntities.assign(EntityList::m_vecEntities.begin(), EntityList::m_vecEntities.end());
         lockEntityGuard.unlock();
-        lockEntityGuard.release();
 
         if (Window::m_bInitialized)
         {
@@ -279,13 +278,12 @@ void AimbotThread()
     {
         if (g_Utilities.IsInGame() && g_License.HasFeature(ETier::PRO) &&
             CONFIG_GET(bool, g_Variables.m_AimBot.m_bEnableAimbot) && !Gui::m_bOpen &&
-            g_Memory.IsWindowInForeground(X("Counter-Strike 2")))
+            g_Memory.IsWindowInForeground(X("Counter-Strike 2"), g_Globals.m_Instance))
         {
             std::unique_lock lockEntityGuard(EntityList::m_mtxEntities);
             std::vector<EntityObject_t> vecEntities;
             vecEntities.assign(EntityList::m_vecEntities.begin(), EntityList::m_vecEntities.end());
             lockEntityGuard.unlock();
-            lockEntityGuard.release();
 
             try { Aimbot::Run(vecEntities); } catch (...) { }
         }
@@ -319,7 +317,7 @@ void TickThread()
             continue;
         }
 
-        if (!g_Memory.IsWindowInForeground(X("Counter-Strike 2")) || Gui::m_bOpen)
+        if (!g_Memory.IsWindowInForeground(X("Counter-Strike 2"), g_Globals.m_Instance) || Gui::m_bOpen)
         {
             g_Utilities.Sleep(1000.0f);
             continue;
@@ -330,7 +328,6 @@ void TickThread()
         std::vector<EntityObject_t> vecEntities;
         vecEntities.assign(EntityList::m_vecEntities.begin(), EntityList::m_vecEntities.end());
         lockEntityGuard.unlock();
-        lockEntityGuard.release();
 
         try
         {
@@ -448,32 +445,63 @@ __forceinline void CreateThreads()
 // -----------------------------------------------------------------------
 bool MainLoop(LPVOID lpParameter)
 {
-    // Login first (needs console for username/password input)
-    g_License.Load();
+    // Show GUI login window — handles login, CS2 detection, ALL inside the window
+    if (LoginWindow::Create())
+    {
+        LoginWindow::Run();
+        // At this point: login done, CS2 found (checked in loading step)
+        // Now initialize everything BEFORE closing login window
+        // (login window is still visible, user sees "Dasturni sozlash...")
 
-    // Keep console open for debug (remove later)
-    // #ifndef _DEBUG
-    //     DetachConsole();
-    // #endif
+        try
+        {
+            // CS2 is already running (checked in loading step 3)
+            g_Memory.Initialize(X("cs2.exe"));
+
+            // Wait for navsystem.dll
+            while (g_Memory.GetModule(NAVSYSTEM_DLL).m_uBaseAddress == 0U)
+                g_Utilities.Sleep(500.0f);
+
+            Config::Setup(X("default.json"));
+            SchemaSystem::Setup();
+        }
+        catch (const std::exception& ex)
+        {
+            MessageBoxA(NULL, ex.what(), "SHIFTHUB - Xato", MB_OK | MB_ICONERROR);
+            LoginWindow::Destroy();
+            exit(EXIT_FAILURE);
+        }
+
+        // NOW destroy login window (everything is ready)
+        LoginWindow::Destroy();
+    }
+    else
+    {
+        // Fallback to console login if GUI fails
+        g_License.Load();
+
+        try
+        {
+            g_Memory.Initialize(X("cs2.exe"));
+            while (g_Memory.GetModule(NAVSYSTEM_DLL).m_uBaseAddress == 0U)
+                g_Utilities.Sleep(500.0f);
+            Config::Setup(X("default.json"));
+            SchemaSystem::Setup();
+        }
+        catch (const std::exception& ex)
+        {
+            std::cout << "  [X] XATO: " << ex.what() << std::endl;
+            Sleep(5000);
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    // Hide console
+    DetachConsole();
 
     try
     {
-        std::cout << X("  [*] cs2.exe qidirilmoqda...") << std::endl;
-        g_Memory.Initialize(X("cs2.exe"));
-        std::cout << X("  [+] cs2.exe topildi!") << std::endl;
-
-        while (g_Memory.GetModule(NAVSYSTEM_DLL).m_uBaseAddress == 0U)
-        {
-            std::cout << X("  [*] navsystem.dll kutilmoqda...") << std::endl;
-            g_Utilities.Sleep(500.0f);
-        }
-        std::cout << X("  [+] navsystem.dll topildi!") << std::endl;
-
-        Config::Setup(X("default.json"));
-        std::cout << X("  [+] Config yuklandi") << std::endl;
-        SchemaSystem::Setup();
-        std::cout << X("  [+] SchemaSystem tayyor") << std::endl;
-
+        // Create overlay (Login window already destroyed, ImGui context fresh)
         if (!Window::m_bInitialized)
             Window::Create();
 
@@ -511,7 +539,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPreviousInstance, LPSTR pAr
     if (!MainLoop(hInstance))
     {
         WeaponIcons::Shutdown();
-        g_Memory.~CMemory();
+        // g_Memory is a global — its destructor runs automatically at exit
         if (Window::m_bInitialized)
             Window::Destroy();
     }

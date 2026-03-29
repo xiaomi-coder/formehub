@@ -424,7 +424,14 @@ void ESP::RenderPlayer(CCSPlayerController* pController, C_CSPlayerPawn* pPawn)
 
     // --- Name ---
     if (CONFIG_GET(bool, g_Variables.m_PlayerVisuals.m_bDrawName))
-        DrawName(vecMin, vecMax, pController->m_strSanitizedPlayerName());
+    {
+        std::string strName = pController->m_strSanitizedPlayerName();
+        strName.erase(std::remove_if(strName.begin(), strName.end(), [](unsigned char c) {
+            return c < 32 || c > 126;
+        }), strName.end());
+
+        DrawName(vecMin, vecMax, strName);
+    }
 
     // --- Weapon ---
     if (CONFIG_GET(bool, g_Variables.m_PlayerVisuals.m_bDrawWeapon))

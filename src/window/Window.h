@@ -12,6 +12,7 @@ namespace Window
     inline IDXGISwapChain* m_pSwapChain = nullptr;
     inline ID3D11RenderTargetView* m_pRenderTargetView = nullptr;
 
+    inline HWND m_hWnd = nullptr;
     inline WNDCLASSEXW m_windowClass = { };
 
     bool Create();

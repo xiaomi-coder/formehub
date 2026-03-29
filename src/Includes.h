@@ -2,10 +2,12 @@
 // include EVERYTHING here
 // standard includes
 #include <Windows.h>
+#include <mmsystem.h>
+#pragma comment(lib, "winmm.lib")
 #include <dwmapi.h>
 #include <TlHelp32.h>
 #include <iostream>
-#include <math.h>
+
 #include <algorithm>
 #include <xstring>
 #include <string>
@@ -99,11 +101,12 @@
 
 #include "gui/Gui.h"
 #include "gui/Fonts.h"
+#include "gui/LoginWindow.h"
 #include "window/Window.h"
 
 #include "features/entities/EntityList.h"
 
-#define WIN32_LEAN_AND_MEAN
+
 
 // ===== HTTP + LICENSE =====
 #include "license/HttpClient.h"

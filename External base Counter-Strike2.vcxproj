@@ -202,6 +202,7 @@
     <ClInclude Include="src\Globals.h" />
     <ClInclude Include="src\gui\Fonts.h" />
     <ClInclude Include="src\gui\Gui.h" />
+    <ClInclude Include="src\gui\LoginWindow.h" />
     <ClInclude Include="src\memory\crypt\FNV1A.h" />
     <ClInclude Include="src\memory\crypt\XorStr.h" />
     <ClInclude Include="src\memory\datatypes\CBaseHandle.h" />
@@ -246,6 +247,7 @@
     <ClCompile Include="src\features\triggerbot\Triggerbot.cpp" />
     <ClCompile Include="src\Globals.cpp" />
     <ClCompile Include="src\gui\Gui.cpp" />
+    <ClCompile Include="src\gui\LoginWindow.cpp" />
     <ClCompile Include="src\license\License.cpp" />
     <ClCompile Include="src\Main.cpp" />
     <ClCompile Include="src\memory\datatypes\CBaseHandle.cpp" />

@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include <Windows.h>
 #include <TlHelp32.h>
@@ -66,17 +66,22 @@ public:
 			CloseHandle(m_pProcessHandle);
 	}
 
-	bool IsWindowInForeground(const char* szWindowName)
+	bool IsWindowInForeground(const char* szWindowName, HWND hOverlayWnd = nullptr)
 	{
-		static HWND hWnd = FindWindowA(nullptr, szWindowName);
-		if (!hWnd)
-			return false;
-
 		HWND hForegroundWnd = GetForegroundWindow();
 		if (!hForegroundWnd)
 			return false;
 
-		return (hWnd == hForegroundWnd);
+		// Check if CS2 window is foreground
+		HWND hWnd = FindWindowA(nullptr, szWindowName);
+		if (hWnd && hWnd == hForegroundWnd)
+			return true;
+
+		// Also accept our overlay window as foreground (overlay sits on top of CS2)
+		if (hOverlayWnd && hOverlayWnd == hForegroundWnd)
+			return true;
+
+		return false;
 	}
 
 	bool IsGameRunning()
@@ -149,8 +154,9 @@ public:
 
 	std::string ReadMemoryString(const std::uintptr_t& uAddress)
 	{
-		char buffer[MAX_PATH]{};
-		ReadMemoryRaw(uAddress, &buffer, sizeof(buffer));
+		char buffer[MAX_PATH + 1]{}; // Extra byte for null terminator
+		ReadMemoryRaw(uAddress, &buffer, MAX_PATH);
+		buffer[MAX_PATH] = '\0'; // Guarantee null termination to prevent crash during std::string conversion
 		return std::string(buffer);
 	}
 
@@ -203,7 +209,7 @@ public:
 		return m_mapModules[uHash];
 	}
 
-	std::uintptr_t PatterScan(const char* szModuleName, const char* szSignature, uint16_t uFlags = NO_FLAGS, std::uint32_t uOption1 = 0U, std::uint32_t uOption2 = 0U)
+	std::uintptr_t PatternScan(const char* szModuleName, const char* szSignature, uint16_t uFlags = NO_FLAGS, std::uint32_t uOption1 = 0U, std::uint32_t uOption2 = 0U)
 	{
 		ModuleInformation_t moduleInformation = GetModule(szModuleName);
 

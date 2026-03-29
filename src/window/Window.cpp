@@ -375,7 +375,6 @@ bool Window::Create()
     swapChainDesc.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
     swapChainDesc.SampleDesc.Count = 1U;
     swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-    swapChainDesc.BufferCount = 2U;
     swapChainDesc.BufferCount = 1U;
     swapChainDesc.OutputWindow = g_Globals.m_Instance;
     swapChainDesc.Windowed = TRUE;
@@ -426,6 +425,7 @@ bool Window::Create()
     Gui::Initialize();
 
     m_bInitialized = true;
+    return true;
 }
 
 void Window::Destroy()
