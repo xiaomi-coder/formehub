@@ -448,10 +448,17 @@ bool MainLoop(LPVOID lpParameter)
     // Show GUI login window — handles login, CS2 detection, ALL inside the window
     if (LoginWindow::Create())
     {
+        // Pre-load configurations so that GUI elements (like saved Menu Key) 
+        // will display the correct user-saved values in the Login window!
+        Config::Setup(X("default.json"));
+
         LoginWindow::Run();
         // At this point: login done, CS2 found (checked in loading step)
         // Now initialize everything BEFORE closing login window
         // (login window is still visible, user sees "Dasturni sozlash...")
+
+        // Save any changes made inside LoginWindow immediately!
+        Config::Save(X("default.json"));
 
         try
         {
@@ -462,7 +469,6 @@ bool MainLoop(LPVOID lpParameter)
             while (g_Memory.GetModule(NAVSYSTEM_DLL).m_uBaseAddress == 0U)
                 g_Utilities.Sleep(500.0f);
 
-            Config::Setup(X("default.json"));
             SchemaSystem::Setup();
         }
         catch (const std::exception& ex)

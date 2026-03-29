@@ -483,7 +483,7 @@ bool LoginWindow::Run()
             // === BOSHLASH (when READY) ===
             if (ePhase == EPhase::READY)
             {
-                float btnW = W - 100, btnX = 50, btnY = H - 80;
+                float btnW = W - 100, btnX = 50, btnY = H - 110; // moved up to fit keybind
 
                 // Animated green line
                 float lineAlpha = (sinf(flPulse * 4.f) + 1.f) * 0.5f;
@@ -495,6 +495,79 @@ bool LoginWindow::Run()
                 if (ImGui::Button("B O S H L A S H", { btnW, 0 }))
                     ePhase = EPhase::DONE;
                 ImGui::PopStyleVar();
+
+                // === MENU KEYBIND ===
+                int& menuKey = CONFIG_GET(int, g_Variables.m_Gui.m_iMenuKey);
+                static bool bListeningMenuKey = false;
+                static float fWaitTimer = 0.f;
+
+                ImGui::SetCursorPosY(btnY + 45); // below boshlash
+                if (bListeningMenuKey)
+                {
+                    const char* lb = "[ Istalgan tugmani bosing... Esc=Bekor ]";
+                    ImGui::SetCursorPosX((W - ImGui::CalcTextSize(lb).x) * 0.5f);
+                    ImGui::PushStyleColor(ImGuiCol_Text, { 0.8f, 0.4f, 0.1f, 1 });
+                    ImGui::Text("%s", lb);
+                    ImGui::PopStyleColor();
+
+                    fWaitTimer -= dt;
+                    if (fWaitTimer < 4.8f) // delay 0.2s to ignore mouse click
+                    {
+                        for (int i = 1; i < 256; i++) {
+                            if (GetAsyncKeyState(i) & 0x8000) {
+                                if (i != VK_ESCAPE) menuKey = i;
+                                bListeningMenuKey = false;
+                                break;
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    // Basic VK2Str
+                    char keyName[32] = "Insert";
+                    if (menuKey == VK_DELETE) strcpy(keyName, "Delete");
+                    else if (menuKey == VK_HOME) strcpy(keyName, "Home");
+                    else if (menuKey == VK_END) strcpy(keyName, "End");
+                    else if (menuKey == VK_F1) strcpy(keyName, "F1");
+                    else if (menuKey == VK_F2) strcpy(keyName, "F2");
+                    else if (menuKey == VK_F3) strcpy(keyName, "F3");
+                    else if (menuKey == VK_F4) strcpy(keyName, "F4");
+                    else if (menuKey == VK_F5) strcpy(keyName, "F5");
+                    else if (menuKey == VK_F6) strcpy(keyName, "F6");
+                    else if (menuKey == VK_F7) strcpy(keyName, "F7");
+                    else if (menuKey == VK_F8) strcpy(keyName, "F8");
+                    else if (menuKey >= 'A' && menuKey <= 'Z') { keyName[0] = (char)menuKey; keyName[1] = 0; }
+                    else if (menuKey >= '0' && menuKey <= '9') { keyName[0] = (char)menuKey; keyName[1] = 0; }
+                    else if (menuKey == VK_LMENU || menuKey == VK_RMENU || menuKey == VK_MENU) strcpy(keyName, "Alt");
+                    else if (menuKey == VK_LSHIFT || menuKey == VK_RSHIFT || menuKey == VK_SHIFT) strcpy(keyName, "Shift");
+                    else if (menuKey == VK_LCONTROL || menuKey == VK_RCONTROL || menuKey == VK_CONTROL) strcpy(keyName, "Ctrl");
+                    else if (menuKey == VK_MBUTTON) strcpy(keyName, "M3");
+                    else if (menuKey == VK_XBUTTON1) strcpy(keyName, "M4");
+                    else if (menuKey == VK_XBUTTON2) strcpy(keyName, "M5");
+                    else if (menuKey != VK_INSERT) snprintf(keyName, sizeof(keyName), "Key: %d", menuKey);
+
+                    char buf[64];
+                    snprintf(buf, sizeof(buf), "Menyuni ekranga chiqarish tugmasi:  [ %s ]", keyName);
+                    
+                    ImGui::SetCursorPosX((W - ImGui::CalcTextSize(buf).x) * 0.5f);
+                    ImGui::PushStyleColor(ImGuiCol_Text, { 0.4f, 0.6f, 0.5f, 1 });
+                    ImGui::Text("%s", buf);
+                    if (ImGui::IsItemHovered()) {
+                        ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+                        ImGui::PopStyleColor();
+                        ImGui::PushStyleColor(ImGuiCol_Text, { 0.6f, 0.8f, 0.7f, 1 });
+                        ImGui::SetCursorPos({(W - ImGui::CalcTextSize(buf).x) * 0.5f, btnY + 45});
+                        ImGui::Text("%s", buf);
+                    }
+                    ImGui::PopStyleColor();
+
+                    if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(0))
+                    {
+                        bListeningMenuKey = true;
+                        fWaitTimer = 5.0f;
+                    }
+                }
             }
 
             // Bottom
