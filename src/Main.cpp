@@ -87,7 +87,10 @@ void RenderThread()
         if (Window::m_bInitialized)
         {
             // ===== ESP =====
-            if (CONFIG_GET(bool, g_Variables.m_PlayerVisuals.m_bEnableVisuals))
+            bool bDrawESP = CONFIG_GET(bool, g_Variables.m_PlayerVisuals.m_bEnableVisuals);
+            bool bDrawGlowInfo = CONFIG_GET(bool, g_Variables.m_PlayerGlow.m_bEnableGlow) && CONFIG_GET(bool, g_Variables.m_PlayerGlow.m_bGlowInfo);
+
+            if (bDrawESP || bDrawGlowInfo)
             {
                 for (EntityObject_t& object : vecEntities)
                 {
@@ -99,7 +102,11 @@ void RenderThread()
                     C_CSPlayerPawn* pPawn = reinterpret_cast<C_CSPlayerPawn*>(pController->m_hPawn().Get());
                     if (!pPawn || !pPawn->IsAlive()) continue;
 
-                    ESP::RenderPlayer(pController, pPawn);
+                    if (bDrawESP)
+                        ESP::RenderPlayer(pController, pPawn);
+
+                    if (bDrawGlowInfo)
+                        ESP::RenderGlowInfo(pController, pPawn);
                 }
             }
 
@@ -114,6 +121,13 @@ void RenderThread()
             // ===== SPECTATOR LIST =====
             if (CONFIG_GET(bool, g_Variables.m_SpectatorList.m_bEnableSpectatorList))
                 SpectatorList::Render(vecEntities);
+
+            // ===== GRENADE WARNING =====
+            if (CONFIG_GET(bool, g_Variables.m_Misc.m_bGrenadeWarning))
+                ESP::RenderGrenades(vecEntities);
+
+            // ===== DROPPED WEAPONS ESP =====
+            ESP::RenderWeapons(vecEntities);
 
             // ===== SNIPER CROSSHAIR =====
             if (CONFIG_GET(bool, g_Variables.m_Misc.m_bSniperCrosshair))
@@ -397,12 +411,100 @@ void TickThread()
                 }
             }
 
+            // ===== FORCE RADAR (CS2 built-in radar) =====
+            if (CONFIG_GET(bool, g_Variables.m_Radar.m_bInGameRadar))
+                Radar::ForceRadarSpotted(vecEntities);
+
+            // ===== AUDITORY SONAR =====
+            Radar::AuditorySonar(vecEntities);
+
+            // ===== PLAYER GLOW (CS2 native engine glow) =====
+            if (CONFIG_GET(bool, g_Variables.m_PlayerGlow.m_bEnableGlow))
+                PlayerGlow::Run(vecEntities);
+
+            // ===== WORLD / NIGHT MODE / FOV =====
+            World::Run(vecEntities);
+
             // ===== SKIN CHANGER =====
             SkinChanger::Run();
         }
         catch (...) { }
 
         g_Utilities.Sleep(INTERVAL_PER_TICK * 1000.0f);
+    }
+}
+
+// -----------------------------------------------------------------------
+void AutoAcceptThread()
+{
+    SetThreadPriorityWrapper();
+    while (!g_Globals.m_bIsUnloading)
+    {
+        if (CONFIG_GET(bool, g_Variables.m_Misc.m_bAutoAccept))
+        {
+            HWND hCS2 = FindWindowA("SDL_app", "Counter-Strike 2");
+            if (hCS2 && GetForegroundWindow() == hCS2)
+            {
+                RECT rect;
+                if (GetClientRect(hCS2, &rect))
+                {
+                    int width = rect.right - rect.left;
+                    int height = rect.bottom - rect.top;
+
+                    if (width >= 800 && height >= 600)
+                    {
+                        HDC hdc = GetDC(hCS2);
+                        if (hdc)
+                        {
+                            int centerX = width / 2;
+                            int centerY = height / 2;
+                            
+                            int greenCount = 0;
+                            // Scan a grid in the center
+                            for (int x = centerX - 30; x <= centerX + 30; x += 10)
+                            {
+                                for (int y = centerY - 50; y <= centerY + 50; y += 10)
+                                {
+                                    COLORREF color = GetPixel(hdc, x, y);
+                                    int r = GetRValue(color);
+                                    int g = GetGValue(color);
+                                    int b = GetBValue(color);
+                                    
+                                    // Accept button is vivid green: High G.
+                                    if (g > 100 && g > (r + 20) && g > (b + 20))
+                                        greenCount++;
+                                }
+                            }
+                            ReleaseDC(hCS2, hdc);
+
+                            // Out of ~77 points, if we find enough green, it's the accept button!
+                            if (greenCount > 3)
+                            {
+                                // Move cursor to center and click
+                                POINT pt;
+                                GetCursorPos(&pt);
+                                
+                                POINT centerPt = { rect.left + centerX, rect.top + centerY };
+                                SetCursorPos(centerPt.x, centerPt.y);
+                                
+                                INPUT inputs[2] = {};
+                                inputs[0].type = INPUT_MOUSE;
+                                inputs[0].mi.dwFlags = MOUSEEVENTF_LEFTDOWN;
+                                inputs[1].type = INPUT_MOUSE;
+                                inputs[1].mi.dwFlags = MOUSEEVENTF_LEFTUP;
+                                SendInput(2, inputs, sizeof(INPUT));
+                                
+                                Sleep(100);
+                                SetCursorPos(pt.x, pt.y);
+
+                                Sleep(3000); // Wait 3 seconds to avoid spamming
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        g_Utilities.Sleep(500); // Check every half a second
     }
 }
 
@@ -438,6 +540,7 @@ __forceinline void CreateThreads()
     std::thread(&TickThread).detach();
     std::thread(&AimbotThread).detach();
     std::thread(&BhopThread).detach();
+    std::thread(&AutoAcceptThread).detach();
     std::thread(&UpdateThread).detach();
     std::thread(&HeartbeatThread).detach();
 }

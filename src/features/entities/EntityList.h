@@ -5,6 +5,9 @@ enum EEntityType : unsigned int
 	ENTITY_INVALID = 0,
 	ENTITY_PLAYER,
 	ENTITY_PLANTEDC4,
+	ENTITY_GRENADE,
+	ENTITY_WORLD,
+	ENTITY_WEAPON
 };
 
 struct EntityObject_t

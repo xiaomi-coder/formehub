@@ -55,7 +55,12 @@ public:
 		CONFIG_ADD_VARIABLE(bool, m_bEnableSpectatorList, false);
 	}; SpectatorListVariables_t m_SpectatorList;
 
-	// ====================== ESP =======================
+	struct ESPVariables_t
+	{
+		CONFIG_ADD_VARIABLE(bool, m_bDroppedWeapons, false);
+		CONFIG_ADD_VARIABLE(float, m_flWeaponDistance, 20.0f); // default 20 meters
+	}; ESPVariables_t m_ESP;
+
 	struct PlayerVisualsVariables_t
 	{
 		CONFIG_ADD_VARIABLE(bool, m_bEnableVisuals, false);
@@ -79,11 +84,23 @@ public:
 		CONFIG_ADD_VARIABLE(Color, m_colTeammate,      Color(50,  100, 255, 200));
 	}; PlayerVisualsVariables_t m_PlayerVisuals;
 
+	// ================== PLAYER GLOW ====================
+	struct PlayerGlowVariables_t
+	{
+		CONFIG_ADD_VARIABLE(bool, m_bEnableGlow, false);
+		CONFIG_ADD_VARIABLE(int,  m_iGlowType,   3);  // 0-none, 3=outer glow
+		CONFIG_ADD_VARIABLE(Color, m_colGlowEnemy,    Color(255, 255, 255, 255)); // White glow
+		CONFIG_ADD_VARIABLE(Color, m_colGlowTeam,     Color(50,  100, 255, 255)); // Blue glow
+		CONFIG_ADD_VARIABLE(bool, m_bGlowEnemyOnly,   true);  // Only enemies
+		CONFIG_ADD_VARIABLE(bool, m_bGlowInfo,        false); // HP and Weapon for glow
+	}; PlayerGlowVariables_t m_PlayerGlow;
+
 	// ===================== BHOP ======================
 	struct BhopVariables_t
 	{
 		CONFIG_ADD_VARIABLE(bool, m_bEnableBhop, false);
 		CONFIG_ADD_VARIABLE(int,  m_iBhopKey,    VK_XBUTTON1); // Mouse4 (5) — NOT Space!
+		CONFIG_ADD_VARIABLE(bool, m_bEnableAutoStrafe, false); // Auto-Strafer
 	}; BhopVariables_t m_Bhop;
 
 	// ================== MISC =========================
@@ -91,10 +108,31 @@ public:
 	{
 		CONFIG_ADD_VARIABLE(bool, m_bAntiFlash,       false);
 		CONFIG_ADD_VARIABLE(bool, m_bC4Timer,         false);
+		CONFIG_ADD_VARIABLE(bool, m_bGrenadeWarning,  false);
 		CONFIG_ADD_VARIABLE(bool, m_bWatermark,       true);
 		CONFIG_ADD_VARIABLE(bool, m_bSniperCrosshair, false);
 		CONFIG_ADD_VARIABLE(bool, m_bHitSound,        false);
+		CONFIG_ADD_VARIABLE(bool, m_bEnableSonar,     false);
+		CONFIG_ADD_VARIABLE(float,m_flSonarFOV,       5.f);
+		CONFIG_ADD_VARIABLE(bool, m_bAutoAccept,      true); // On by default globally
 	}; MiscVariables_t m_Misc;
+
+	// ================== RCS ==========================
+	struct RCSVariables_t
+	{
+		CONFIG_ADD_VARIABLE(bool,  m_bEnable,         false);
+		CONFIG_ADD_VARIABLE(float, m_flScaleX,        1.0f);
+		CONFIG_ADD_VARIABLE(float, m_flScaleY,        1.0f);
+	}; RCSVariables_t m_RCS;
+
+	// ================== WORLD ========================
+	struct WorldVariables_t
+	{
+		CONFIG_ADD_VARIABLE(bool,  m_bNightMode,      false);
+		CONFIG_ADD_VARIABLE(float, m_flNightModeValue,0.2f);
+		CONFIG_ADD_VARIABLE(bool,  m_bFOVChanger,     false);
+		CONFIG_ADD_VARIABLE(int,   m_iFOV,            105);
+	}; WorldVariables_t m_World;
 
 	// ================== HOTKEYS =======================
 	struct HotkeyVariables_t
@@ -106,6 +144,7 @@ public:
 	struct RadarVariables_t
 	{
 		CONFIG_ADD_VARIABLE(bool,  m_bEnableRadar,  false);
+		CONFIG_ADD_VARIABLE(bool,  m_bInGameRadar,  false); // Hack the CS2 ingame radar
 		CONFIG_ADD_VARIABLE(float, m_flRadarSize,   200.0f);
 		CONFIG_ADD_VARIABLE(float, m_flRadarRange,  2000.0f);
 		CONFIG_ADD_VARIABLE(float, m_flRadarX,      20.0f);

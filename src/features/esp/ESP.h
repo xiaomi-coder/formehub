@@ -4,6 +4,9 @@ namespace ESP
 {
     // Main entry – call once per player in RenderThread
     void RenderPlayer(CCSPlayerController* pController, C_CSPlayerPawn* pPawn);
+    void RenderGlowInfo(CCSPlayerController* pController, C_CSPlayerPawn* pPawn);
+    void RenderGrenades(const std::vector<EntityObject_t>& vecEntities);
+    void RenderWeapons(const std::vector<EntityObject_t>& vecEntities);
 
     // Helpers
     bool GetBoundingBox(C_CSPlayerPawn* pPawn, ImVec2& vecMin, ImVec2& vecMax);

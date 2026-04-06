@@ -193,10 +193,12 @@
     <ClInclude Include="src\features\entities\EntityList.h" />
     <ClInclude Include="src\features\esp\ESP.h" />
     <ClInclude Include="src\features\esp\SpectatorList.h" />
+    <ClInclude Include="src\features\esp\PlayerGlow.h" />
     <ClInclude Include="src\features\esp\WeaponIcons.h" />
     <ClInclude Include="src\features\radar\Radar.h" />
     <ClInclude Include="src\features\skinchanger\SkinChanger.h" />
     <ClInclude Include="src\features\triggerbot\Triggerbot.h" />
+    <ClInclude Include="src\features\world\World.h" />
     <ClInclude Include="src\license\HttpClient.h" />
     <ClInclude Include="src\license\License.h" />
     <ClInclude Include="src\Globals.h" />
@@ -241,10 +243,12 @@
     <ClCompile Include="src\features\entities\EntityList.cpp" />
     <ClCompile Include="src\features\esp\ESP.cpp" />
     <ClCompile Include="src\features\esp\SpectatorList.cpp" />
+    <ClCompile Include="src\features\esp\PlayerGlow.cpp" />
     <ClCompile Include="src\features\esp\WeaponIcons.cpp" />
     <ClCompile Include="src\features\radar\Radar.cpp" />
     <ClCompile Include="src\features\skinchanger\SkinChanger.cpp" />
     <ClCompile Include="src\features\triggerbot\Triggerbot.cpp" />
+    <ClCompile Include="src\features\world\World.cpp" />
     <ClCompile Include="src\Globals.cpp" />
     <ClCompile Include="src\gui\Gui.cpp" />
     <ClCompile Include="src\gui\LoginWindow.cpp" />

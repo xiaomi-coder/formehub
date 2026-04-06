@@ -505,3 +505,230 @@ void ESP::RenderPlayer(CCSPlayerController* pController, C_CSPlayerPawn* pPawn)
     if (CONFIG_GET(bool, g_Variables.m_PlayerVisuals.m_bDrawSkeleton))
         DrawSkeleton(pPawn, Color(col, 160));
 }
+
+// -----------------------------------------------------------------------
+// RenderGlowInfo: Draw HP and Weapon for Glow mode
+// -----------------------------------------------------------------------
+void ESP::RenderGlowInfo(CCSPlayerController* pController, C_CSPlayerPawn* pPawn)
+{
+    ImVec2 vecMin, vecMax;
+    if (!GetBoundingBox(pPawn, vecMin, vecMax))
+        return;
+
+    // ignore teammates?
+    bool bIgnoreTeam = CONFIG_GET(bool, g_Variables.m_PlayerGlow.m_bGlowEnemyOnly);
+    if (bIgnoreTeam && pPawn->m_iTeamNum() == g_Globals.m_LocalPlayer.m_pPlayerPawn->m_iTeamNum())
+        return;
+
+    // Head text: [ 100 HP ]
+    int iHP = std::clamp(pPawn->m_iHealth(), 0, 100);
+    char szHP[32];
+    snprintf(szHP, sizeof(szHP), "[ %d HP ]", iHP);
+    ImVec2 hpSize = Fonts::ESP->CalcTextSizeA(Fonts::ESP->FontSize, FLT_MAX, 0.f, szHP);
+    float cx = (vecMin.x + vecMax.x) * 0.5f;
+    
+    Draw::AddText(Fonts::ESP, Fonts::ESP->FontSize, ImVec2(cx - hpSize.x * 0.5f, vecMin.y - 18.f), 
+                  szHP, iHP > 40 ? Color(100, 255, 100, 255) : Color(255, 100, 100, 255), 
+                  DRAW_TEXT_DROPSHADOW, Color(0,0,0,200));
+
+    // Weapon
+    std::string szWeapon = pPawn->m_strActiveWeaponName();
+    if (!szWeapon.empty())
+        DrawWeapon(vecMin, ImVec2(vecMax.x, vecMax.y), szWeapon);
+}
+
+// -----------------------------------------------------------------------
+// Render global map grenades (Smoke, Molotov, HE)
+// -----------------------------------------------------------------------
+void ESP::RenderGrenades(const std::vector<EntityObject_t>& vecEntities)
+{
+    if (!CONFIG_GET(bool, g_Variables.m_Misc.m_bGrenadeWarning)) return;
+
+    for (const EntityObject_t& obj : vecEntities)
+    {
+        if (obj.m_pEntity == nullptr || obj.m_eType != EEntityType::ENTITY_GRENADE)
+            continue;
+
+        bool bIsSmoke = (obj.m_uHashedName == FNV1A::HashConst("C_SmokeGrenadeProjectile"));
+        bool bIsMolotov = (obj.m_uHashedName == FNV1A::HashConst("C_MolotovProjectile") || 
+                           obj.m_uHashedName == FNV1A::HashConst("C_HEGrenadeProjectile") || 
+                           obj.m_uHashedName == FNV1A::HashConst("C_FlashbangProjectile"));
+
+        if (bIsSmoke || bIsMolotov)
+        {
+            static std::uint32_t uGameSceneNodeOffset = 0;
+            static std::uint32_t uOriginOffset = 0;
+            static bool bSceneResolved = false;
+            
+            if (!bSceneResolved)
+            {
+                uGameSceneNodeOffset = SchemaSystem::m_mapSchemaOffsets[FNV1A::Hash("C_BaseEntity->m_pGameSceneNode")];
+                uOriginOffset = SchemaSystem::m_mapSchemaOffsets[FNV1A::Hash("CGameSceneNode->m_vecAbsOrigin")];
+                bSceneResolved = true;
+            }
+
+            if (uGameSceneNodeOffset > 0 && uOriginOffset > 0)
+            {
+                std::uintptr_t uSceneNode = g_Memory.ReadMemory<std::uintptr_t>(reinterpret_cast<std::uintptr_t>(obj.m_pEntity) + uGameSceneNodeOffset);
+                if (uSceneNode > 0x1000)
+                {
+                    Vector vecOrigin = g_Memory.ReadMemory<Vector>(uSceneNode + uOriginOffset);
+                    if (std::isfinite(vecOrigin.x) && std::isfinite(vecOrigin.y) && std::isfinite(vecOrigin.z))
+                    {
+                        ImVec2 screenPos;
+                        if (Draw::WorldToScreen(vecOrigin, screenPos))
+                        {
+                            std::string strLabel = "";
+                            Color colText = Color(255, 255, 255, 255);
+                            Color colCircle = colText;
+
+                            if (bIsSmoke) {
+                                strLabel = "SMOKE";
+                                colCircle = Color(150, 150, 255, 200);
+                                colText = Color(200, 200, 255, 255);
+                            } else if (obj.m_uHashedName == FNV1A::HashConst("C_MolotovProjectile")) {
+                                strLabel = "MOLOTOV";
+                                colCircle = Color(255, 50, 50, 200);
+                                colText = Color(255, 100, 100, 255);
+                            } else if (obj.m_uHashedName == FNV1A::HashConst("C_HEGrenadeProjectile")) {
+                                strLabel = "HE GRENADE";
+                                colCircle = Color(255, 150, 0, 200);
+                                colText = Color(255, 200, 50, 255);
+                            } else if (obj.m_uHashedName == FNV1A::HashConst("C_FlashbangProjectile")) {
+                                strLabel = "FLASHBANG";
+                                colCircle = Color(255, 255, 150, 200);
+                                colText = Color(255, 255, 200, 255);
+                            }
+
+                            // 1. Draw a small, clean marker marking the exact center in 3D
+                            Draw::AddRing(vecOrigin, 15.0f, colCircle, 32, 0, 2.0f);
+
+                            // 2. Draw the Text Label above the center
+                            ImVec2 textSize = Fonts::ESP->CalcTextSizeA(Fonts::ESP->FontSize, FLT_MAX, 0.f, strLabel.c_str());
+                            Draw::AddText(Fonts::ESP, Fonts::ESP->FontSize, 
+                                          ImVec2(screenPos.x - textSize.x * 0.5f, screenPos.y - 15.f), 
+                                          strLabel, colText, DRAW_TEXT_DROPSHADOW, Color(0,0,0,200));
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+void ESP::RenderWeapons(const std::vector<EntityObject_t>& vecEntities)
+{
+    if (!CONFIG_GET(bool, g_Variables.m_ESP.m_bDroppedWeapons))
+        return;
+
+    static std::uintptr_t uGameSceneNodeOffset = 0;
+    static std::uintptr_t uOriginOffset = 0;
+    static bool bOffsetsResolved = false;
+
+    if (!bOffsetsResolved) {
+        auto mapCpy = SchemaSystem::m_mapSchemaOffsets;
+        uGameSceneNodeOffset = mapCpy[FNV1A::Hash("C_BaseEntity->m_pGameSceneNode")];
+        uOriginOffset = mapCpy[FNV1A::Hash("CGameSceneNode->m_vecAbsOrigin")];
+        bOffsetsResolved = true;
+    }
+
+    if (uGameSceneNodeOffset == 0 || uOriginOffset == 0) return;
+
+    float flMaxDist = CONFIG_GET(float, g_Variables.m_ESP.m_flWeaponDistance);
+
+    for (const EntityObject_t& obj : vecEntities)
+    {
+        if (obj.m_pEntity == nullptr || obj.m_eType != EEntityType::ENTITY_WEAPON)
+            continue;
+
+        std::uintptr_t pEntityPtr = reinterpret_cast<std::uintptr_t>(obj.m_pEntity);
+        std::uintptr_t uSceneNode = g_Memory.ReadMemory<std::uintptr_t>(pEntityPtr + uGameSceneNodeOffset);
+
+        if (uSceneNode > 0x1000)
+        {
+            Vector vecOrigin = g_Memory.ReadMemory<Vector>(uSceneNode + uOriginOffset);
+            
+            float dist = 0.f;
+            C_CSPlayerPawn* pLocalPawn = g_Globals.m_LocalPlayer.m_pPlayerPawn;
+            if (pLocalPawn) {
+                // Read local origin to check distance
+                std::uintptr_t uLocalScene = g_Memory.ReadMemory<std::uintptr_t>(reinterpret_cast<std::uintptr_t>(pLocalPawn) + uGameSceneNodeOffset);
+                if (uLocalScene > 0x1000) {
+                    Vector vecLocalOrigin = g_Memory.ReadMemory<Vector>(uLocalScene + uOriginOffset);
+                    dist = vecLocalOrigin.DistTo(vecOrigin) * 0.0254f; // units to meters
+                    if (dist > flMaxDist) continue;
+                }
+            }
+
+            ImVec2 screenPos;
+            if (Draw::WorldToScreen(vecOrigin, screenPos))
+            {
+                std::string sName = obj.m_pEntity->GetSchemaName();
+                if (!sName.empty()) {
+                    if (sName.find("Weapon") != std::string::npos || sName == "C_DEagle" || sName == "C_AK47") {
+                        if (sName.find("C_Weapon") != std::string::npos) sName = sName.substr(8);
+                        else if (sName.find("CWeapon") != std::string::npos) sName = sName.substr(7);
+                        else if (sName.find("C_") != std::string::npos) sName = sName.substr(2);
+
+                        std::string sLowerName = sName;
+                        std::transform(sLowerName.begin(), sLowerName.end(), sLowerName.begin(), ::tolower);
+
+                        Color colWeapon = GetWeaponColor(sLowerName);
+
+                        float flBottomY = screenPos.y; // Track bottom of drawn element
+
+                        bool bDrawnIcon = false;
+                        if (WeaponIcons::HasIcon(sLowerName))
+                        {
+                            ImTextureID tex = WeaponIcons::GetIcon(sLowerName);
+                            if (tex)
+                            {
+                                int iTexW = 0, iTexH = 0;
+                                WeaponIcons::GetIconSize(sLowerName, iTexW, iTexH);
+                                float flAspect = (iTexH > 0) ? (float)iTexW / (float)iTexH : 2.67f;
+                                
+                                // Dynamic scaling based on distance
+                                float flIconW = std::clamp(250.f / std::max(dist, 1.f), 15.f, 45.f);
+                                float flIconH = flIconW / flAspect;
+
+                                Draw::AddImage(tex,
+                                    ImVec2(screenPos.x - flIconW * 0.5f, screenPos.y),
+                                    ImVec2(screenPos.x + flIconW * 0.5f, screenPos.y + flIconH),
+                                    colWeapon);
+                                
+                                flBottomY = screenPos.y + flIconH;
+                                bDrawnIcon = true;
+                            }
+                        }
+
+                        if (!bDrawnIcon)
+                        {
+                            std::transform(sName.begin(), sName.end(), sName.begin(), ::toupper);
+                            std::string strLabel = "[" + sName + "]";
+                            ImVec2 textSize = Fonts::ESP->CalcTextSizeA(Fonts::ESP->FontSize, FLT_MAX, 0.f, strLabel.c_str());
+                            Draw::AddText(Fonts::ESP, Fonts::ESP->FontSize, 
+                                          ImVec2(screenPos.x - textSize.x * 0.5f, screenPos.y), 
+                                          strLabel, colWeapon, DRAW_TEXT_DROPSHADOW, Color(0,0,0,200));
+                            
+                            flBottomY = screenPos.y + Fonts::ESP->FontSize;
+                        }
+
+                        // Draw distance below
+                        if (dist > 0.f)
+                        {
+                            char szDist[32];
+                            snprintf(szDist, sizeof(szDist), "%.0fm", dist);
+                            
+                            // Make distance text slightly smaller if possible, but keep consistent with font
+                            ImVec2 distSize = Fonts::ESP->CalcTextSizeA(Fonts::ESP->FontSize * 0.85f, FLT_MAX, 0.f, szDist);
+                            Draw::AddText(Fonts::ESP, Fonts::ESP->FontSize * 0.85f,
+                                          ImVec2(screenPos.x - distSize.x * 0.5f, flBottomY + 2.f),
+                                          szDist, Color(200, 200, 200, 200), DRAW_TEXT_DROPSHADOW, Color(0,0,0, 150));
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+

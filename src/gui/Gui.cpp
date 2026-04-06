@@ -315,9 +315,9 @@ void Gui::Render()
             if (ImGui::BeginTabItem(X("[ VIZUAL ]")))
             {
                 ImGui::Spacing();
-                SectionTitle("O'yinchi ESP");
+                SectionTitle("Devor orti ko'rish (WH)");
 
-                ImGui::Checkbox(X("ESP yoqish"), &CONFIG_GET(bool, g_Variables.m_PlayerVisuals.m_bEnableVisuals));
+                ImGui::Checkbox(X("Devordan ko'rishni yoqish"), &CONFIG_GET(bool, g_Variables.m_PlayerVisuals.m_bEnableVisuals));
 
                 if (CONFIG_GET(bool, g_Variables.m_PlayerVisuals.m_bEnableVisuals))
                 {
@@ -364,6 +364,15 @@ void Gui::Render()
 
                     ImGui::Checkbox(X("Bomba ogohlantirish"), &CONFIG_GET(bool, g_Variables.m_PlayerVisuals.m_bDrawHasC4));
 
+                    ImGui::Spacing();
+                    SectionTitle("Yerdagi Qurollar (Loot)");
+                    ImGui::Checkbox(X("Loot ESP yoqish"), &CONFIG_GET(bool, g_Variables.m_ESP.m_bDroppedWeapons));
+                    if (CONFIG_GET(bool, g_Variables.m_ESP.m_bDroppedWeapons))
+                    {
+                        ImGui::SetNextItemWidth(200.f);
+                        ImGui::SliderFloat(X("Loot Masofasi"), &CONFIG_GET(float, g_Variables.m_ESP.m_flWeaponDistance), 5.f, 200.f, "%.0f metragacha");
+                    }
+
                 ImGui::Spacing();
                 SectionTitle("Tezkor tugma");
 
@@ -375,6 +384,45 @@ void Gui::Render()
                     ColorEdit4Shim(X("Dushman (ko'ringan)"),  CONFIG_GET(Color, g_Variables.m_PlayerVisuals.m_colEnemyVisible));
                     ColorEdit4Shim(X("Dushman (yashirin)"), CONFIG_GET(Color, g_Variables.m_PlayerVisuals.m_colEnemyOccluded));
                     ColorEdit4Shim(X("Jamoadosh"),       CONFIG_GET(Color, g_Variables.m_PlayerVisuals.m_colTeammate));
+                }
+
+                ImGui::Spacing();
+                SectionTitle("Dunyo");
+                ImGui::Checkbox(X("Tungi rejim"), &CONFIG_GET(bool, g_Variables.m_World.m_bNightMode));
+                if (CONFIG_GET(bool, g_Variables.m_World.m_bNightMode))
+                {
+                    ImGui::SetNextItemWidth(200.f);
+                    ImGui::SliderFloat(X("Tungi qorong'ulik"), &CONFIG_GET(float, g_Variables.m_World.m_flNightModeValue), 0.01f, 1.0f, "%.2f");
+                }
+
+                ImGui::Checkbox(X("O'yin kamerasini uzoqlashtirish (FOV)"), &CONFIG_GET(bool, g_Variables.m_World.m_bFOVChanger));
+                if (CONFIG_GET(bool, g_Variables.m_World.m_bFOVChanger))
+                {
+                    ImGui::SetNextItemWidth(200.f);
+                    ImGui::SliderInt(X("Kamera FOV"), &CONFIG_GET(int, g_Variables.m_World.m_iFOV), 40, 150, "%d deg");
+                }
+
+                ImGui::Spacing();
+                ImGui::Spacing();
+                SectionTitle("Odamni yoritish (Glow)");
+                ImGui::PushStyleColor(ImGuiCol_Text, C(100, 100, 120));
+                ImGui::Text("  Dushman yoki sizni fosfordek yoritib turadi");
+                ImGui::PopStyleColor();
+
+                ImGui::Checkbox(X("Yoritishni yoqish"), &CONFIG_GET(bool, g_Variables.m_PlayerGlow.m_bEnableGlow));
+
+                if (CONFIG_GET(bool, g_Variables.m_PlayerGlow.m_bEnableGlow))
+                {
+                    ImGui::Checkbox(X("Glow bilan Jon va Qurolni ko'rsatish"), &CONFIG_GET(bool, g_Variables.m_PlayerGlow.m_bGlowInfo));
+                    ImGui::Checkbox(X("Faqat dushmanlarni yoritish##glow"), &CONFIG_GET(bool, g_Variables.m_PlayerGlow.m_bGlowEnemyOnly));
+
+                    static const char* glowTypes[] = { "O'chirilgan", "Oddiy", "Pulsating", "Tashqi Kontur" };
+                    ImGui::SetNextItemWidth(160.f);
+                    ImGui::Combo(X("Yoritish turi"), &CONFIG_GET(int, g_Variables.m_PlayerGlow.m_iGlowType), glowTypes, 4);
+
+                    ColorEdit4Shim(X("Dushman rangi##gcol"), CONFIG_GET(Color, g_Variables.m_PlayerGlow.m_colGlowEnemy));
+                    if (!CONFIG_GET(bool, g_Variables.m_PlayerGlow.m_bGlowEnemyOnly))
+                        ColorEdit4Shim(X("Jamoadosh rangi##gcol2"), CONFIG_GET(Color, g_Variables.m_PlayerGlow.m_colGlowTeam));
                 }
 
                 ImGui::EndTabItem();
@@ -395,6 +443,7 @@ void Gui::Render()
 
                     if (CONFIG_GET(bool, g_Variables.m_Bhop.m_bEnableBhop))
                     {
+                        ImGui::Checkbox(X("Auto-Strafer (Avtomatik sakrash)"), &CONFIG_GET(bool, g_Variables.m_Bhop.m_bEnableAutoStrafe));
                         ImGui::Spacing();
                         ImGui::PushStyleColor(ImGuiCol_Text, C(255, 200, 50));
                         ImGui::Text("  Space (32) ishlatmang!");
@@ -484,6 +533,20 @@ void Gui::Render()
 
                     ImGui::Checkbox(X("Jamoani e'tiborsiz##aim"), &CONFIG_GET(bool, g_Variables.m_AimBot.m_bIgnoreTeammates));
                     ImGui::Checkbox(X("FOV doirasini chizish"),       &CONFIG_GET(bool, g_Variables.m_AimBot.m_bDrawFOV));
+
+                    ImGui::Spacing();
+                    SectionTitle("Recoil Control (RCS) - Otkacha");
+                    ImGui::Checkbox(X("RCS yoqish"), &CONFIG_GET(bool, g_Variables.m_RCS.m_bEnable));
+                    if (CONFIG_GET(bool, g_Variables.m_RCS.m_bEnable))
+                    {
+                        ImGui::PushStyleColor(ImGuiCol_Text, C(100, 100, 120));
+                        ImGui::Text("Aimbot yoqilgan payti ishlamaydi, mustaqil tortadi.");
+                        ImGui::PopStyleColor();
+                        ImGui::SetNextItemWidth(200.f);
+                        ImGui::SliderFloat(X("RCS X (Yonga) kuch"), &CONFIG_GET(float, g_Variables.m_RCS.m_flScaleX), 0.f, 2.0f, "%.2f");
+                        ImGui::SetNextItemWidth(200.f);
+                        ImGui::SliderFloat(X("RCS Y (Pastga) kuch"), &CONFIG_GET(float, g_Variables.m_RCS.m_flScaleY), 0.f, 2.0f, "%.2f");
+                    }
                 }
                 else
                 {
@@ -517,6 +580,29 @@ void Gui::Render()
                     ImGui::SetNextItemWidth(180.f);
                     ImGui::SliderFloat(X("Y pozitsiya"),   &CONFIG_GET(float, g_Variables.m_Radar.m_flRadarY),    0.f, 1080.f, "%.0f");
                     ImGui::Checkbox(X("Qarash bilan aylantirish"), &CONFIG_GET(bool, g_Variables.m_Radar.m_bRadarRotate));
+                }
+
+                ImGui::Spacing();
+                ImGui::Spacing();
+                SectionTitle("O'yin radari (In-Game Hack)");
+                ImGui::PushStyleColor(ImGuiCol_Text, C(100, 100, 120));
+                ImGui::Text("  Dushmanlarni o'yinning chap tepasidagi asil radariga ochib beradi.");
+                ImGui::PopStyleColor();
+
+                ImGui::Checkbox(X("O'yin radarida ko'rsatish"), &CONFIG_GET(bool, g_Variables.m_Radar.m_bInGameRadar));
+
+                ImGui::Spacing();
+                ImGui::Spacing();
+                SectionTitle("Ovozli Radar (Sonar ESP)");
+                ImGui::PushStyleColor(ImGuiCol_Text, C(100, 100, 120));
+                ImGui::Text("  Dushmanga qaraganingizda devor ortidan ovoz (Piip) chiqaradi.");
+                ImGui::PopStyleColor();
+
+                ImGui::Checkbox(X("Ovozli radarni yoqish"), &CONFIG_GET(bool, g_Variables.m_Misc.m_bEnableSonar));
+                if (CONFIG_GET(bool, g_Variables.m_Misc.m_bEnableSonar))
+                {
+                    ImGui::SetNextItemWidth(180.f);
+                    ImGui::SliderFloat(X("Sezuvchanlik radiusi (FOV)"), &CONFIG_GET(float, g_Variables.m_Misc.m_flSonarFOV), 1.f, 20.f, "%.1f deg");
                 }
 
                 ImGui::EndTabItem();
@@ -761,6 +847,11 @@ void Gui::Render()
                 ImGui::Spacing();
                 SectionTitle("Qo'shimcha xususiyatlar");
 
+                ImGui::Checkbox(X("Avtomatik Qabul Qilish (Auto-Accept)"), &CONFIG_GET(bool, g_Variables.m_Misc.m_bAutoAccept));
+                ImGui::PushStyleColor(ImGuiCol_Text, C(100, 100, 120));
+                ImGui::Text("  Match topilganda orqa fonda avtomatik tarzda markaziy tugmani bosadi.");
+                ImGui::PopStyleColor();
+
                 ImGui::Checkbox(X("Flash himoya"), &CONFIG_GET(bool, g_Variables.m_Misc.m_bAntiFlash));
                 ImGui::PushStyleColor(ImGuiCol_Text, C(100, 100, 120));
                 ImGui::Text("  Flash grenade effektini yo'q qiladi");
@@ -774,6 +865,11 @@ void Gui::Render()
                 ImGui::Checkbox(X("Watermark"), &CONFIG_GET(bool, g_Variables.m_Misc.m_bWatermark));
                 ImGui::PushStyleColor(ImGuiCol_Text, C(100, 100, 120));
                 ImGui::Text("  Ekranda cheat nomi va FPS ko'rsatib turadi");
+                ImGui::PopStyleColor();
+
+                ImGui::Checkbox(X("Granata Xavfi (Grenade Warning)"), &CONFIG_GET(bool, g_Variables.m_Misc.m_bGrenadeWarning));
+                ImGui::PushStyleColor(ImGuiCol_Text, C(100, 100, 120));
+                ImGui::Text("  Molotov, Smoke va HE traektoriyasi va radiusini chizadi");
                 ImGui::PopStyleColor();
 
                 ImGui::Checkbox(X("Sniper Crosshair (qoq markaz)"), &CONFIG_GET(bool, g_Variables.m_Misc.m_bSniperCrosshair));

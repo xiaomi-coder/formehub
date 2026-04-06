@@ -193,6 +193,7 @@ public:
 
     SCHEMA(CCollisionProperty*, m_pCollision, "C_BaseEntity->m_pCollision");
     SCHEMA(CGameSceneNode*, m_pGameSceneNode, "C_BaseEntity->m_pGameSceneNode");
+    SCHEMA(CHandle<C_BaseEntity>, m_hOwnerEntity, "C_BaseEntity->m_hOwnerEntity");
 
     SCHEMA_OFFSET(CEntitySubClassVDataBase*, m_pVDataBase, "C_BaseEntity->m_nSubclassID", 0x8);
 };
@@ -316,10 +317,17 @@ class CCSPlayer_WeaponServices : public CPlayer_WeaponServices
 public:
 };
 
+class CCSPlayer_ViewModelServices
+{
+public:
+    SCHEMA(CHandle<C_BaseModelEntity>, m_hViewModel, "CCSPlayer_ViewModelServices->m_hViewModel");
+};
+
 class C_BasePlayerPawn : public C_BaseModelEntity
 {
 public:
     SCHEMA(CCSPlayer_WeaponServices*, m_pWeaponServices, "C_BasePlayerPawn->m_pWeaponServices");
+    SCHEMA(CCSPlayer_ViewModelServices*, m_pViewModelServices, "C_BasePlayerPawn->m_pViewModelServices");
 
     SCHEMA(float, m_flFOVSensitivityAdjust, "C_BasePlayerPawn->m_flFOVSensitivityAdjust");
 };

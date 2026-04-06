@@ -1,4 +1,6 @@
 #include "../Includes.h"
+#include <urlmon.h>
+#pragma comment(lib, "urlmon.lib")
 
 static BOOL CheckForUIAccess(DWORD* pdwErr, DWORD* pfUIAccess) {
     BOOL result = FALSE;
@@ -423,6 +425,17 @@ bool Window::Create()
     ImGui_ImplDX11_Init(m_pDevice, m_pContext);
 
     Gui::Initialize();
+
+    if (CONFIG_GET(bool, g_Variables.m_Gui.m_bExcludeFromDesktopCapture))
+        SetWindowDisplayAffinity(g_Globals.m_Instance, WDA_EXCLUDEFROMCAPTURE);
+
+    // Auto-download radar_ping.wav if missing
+    if (GetFileAttributesA("radar_ping.wav") == INVALID_FILE_ATTRIBUTES)
+    {
+        std::thread([]() {
+            URLDownloadToFileA(NULL, "https://www.myinstants.com/media/sounds/csgo-sonar.mp3", "radar_ping.wav", 0, NULL);
+        }).detach();
+    }
 
     m_bInitialized = true;
     return true;
