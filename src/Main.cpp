@@ -257,6 +257,43 @@ void RenderThread()
                         Draw::AddText(Fonts::ESP, Fonts::ESP->FontSize,
                             ImVec2(screenPos.x - 28.f, boxMin.y - Fonts::ESP->FontSize - 3.f),
                             std::string(szWorld), col, DRAW_TEXT_DROPSHADOW, Color(0, 0, 0, 200));
+                        // C4 Damage Indicator
+                        C_CSPlayerPawn* pLocalPawn = g_Globals.m_LocalPlayer.m_pPlayerPawn;
+                        if (pLocalPawn && pLocalPawn->IsAlive())
+                        {
+                            Vector vecLocalPos = pLocalPawn->m_pGameSceneNode()->m_vecAbsOrigin();
+                            float flDistance = s_vecBombPos.DistTo(vecLocalPos);
+                            
+                            // CS2 C4 damage formula approx (radius 500)
+                            // float flDamage = 500.f * exp(- (d^2) / (2 * 175^2))
+                            float flDamage = 500.f * exp(-pow(flDistance, 2.f) / (2.f * pow(500.f, 2.f)));
+                            
+                            int iHealth = pLocalPawn->m_iHealth();
+                            int iArmor = pLocalPawn->m_ArmorValue();
+                            
+                            if (iArmor > 0) {
+                                float flArmorRatio = 0.5f; // simple armor mitigation
+                                flDamage *= flArmorRatio;
+                            }
+                            
+                            int iFinalDamage = static_cast<int>(flDamage);
+                            
+                            if (iFinalDamage > 1) { // Only show if taking damage
+                                std::string strDamage;
+                                Color colDamage;
+                                if (iFinalDamage >= iHealth) {
+                                    strDamage = "FATAL";
+                                    colDamage = Color(255, 0, 0, 255);
+                                } else {
+                                    strDamage = "-" + std::to_string(iFinalDamage) + " HP";
+                                    colDamage = Color(255, 150, 0, 255);
+                                }
+                                
+                                Draw::AddText(Fonts::ESP, Fonts::ESP->FontSize,
+                                    ImVec2(screenPos.x - 18.f, boxMax.y + 3.f),
+                                    strDamage, colDamage, DRAW_TEXT_DROPSHADOW, Color(0, 0, 0, 200));
+                            }
+                        }
                     }
                 }
             }

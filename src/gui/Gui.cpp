@@ -860,9 +860,9 @@ void Gui::Render()
                 ImGui::Text("  Flash grenade effektini yo'q qiladi");
                 ImGui::PopStyleColor();
 
-                ImGui::Checkbox(X("C4 Timer"), &CONFIG_GET(bool, g_Variables.m_Misc.m_bC4Timer));
+                ImGui::Checkbox(X("C4 Timer + Damage Indicator"), &CONFIG_GET(bool, g_Variables.m_Misc.m_bC4Timer));
                 ImGui::PushStyleColor(ImGuiCol_Text, C(100, 100, 120));
-                ImGui::Text("  Bomba portlashigacha qolgan vaqtni ko'rsatadi");
+                ImGui::Text("  Bomba portlashigacha qolgan vaqt va ZARARNI ko'rsatadi");
                 ImGui::PopStyleColor();
 
                 ImGui::Checkbox(X("Watermark"), &CONFIG_GET(bool, g_Variables.m_Misc.m_bWatermark));

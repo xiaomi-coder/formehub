@@ -114,6 +114,11 @@ bool SchemaSystem::Setup()
 	SetIfZero(FNV1A::HashConst("C_BaseModelEntity->m_vecViewOffset"), 3696);
 	SetIfZero(FNV1A::HashConst("C_BaseModelEntity->m_Glow"), 3544);
 
+	// C_EconEntity
+	SetIfZero(FNV1A::HashConst("C_EconEntity->m_AttributeManager"), 4480);
+	SetIfZero(FNV1A::HashConst("C_AttributeContainer->m_Item"), 80);
+	SetIfZero(FNV1A::HashConst("C_EconItemView->m_iItemDefinitionIndex"), 442);
+
 	// CGlowProperty
 	SetIfZero(FNV1A::HashConst("CGlowProperty->m_iGlowType"), 48);
 	SetIfZero(FNV1A::HashConst("CGlowProperty->m_glowColorOverride"), 64);
@@ -126,6 +131,7 @@ bool SchemaSystem::Setup()
 
 	// CPlayer_WeaponServices
 	SetIfZero(FNV1A::HashConst("CPlayer_WeaponServices->m_hActiveWeapon"), 96);
+	SetIfZero(FNV1A::HashConst("CPlayer_WeaponServices->m_hMyWeapons"), 72);
 
 	// CBasePlayerController - CRITICAL for ESP
 	SetIfZero(FNV1A::HashConst("CBasePlayerController->m_bIsLocalPlayerController"), 1920);

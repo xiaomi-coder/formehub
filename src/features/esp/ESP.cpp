@@ -466,7 +466,7 @@ void ESP::RenderPlayer(CCSPlayerController* pController, C_CSPlayerPawn* pPawn)
                         C_BasePlayerWeapon* pWeapon = hWeaponHandle.Get();
                         if (pWeapon && reinterpret_cast<std::uintptr_t>(pWeapon) > 0x1000)
                         {
-                            if (pWeapon->GetItemDefinitionIndex() == 49) // 49 = WEAPON_C4
+                            if (pWeapon->GetSchemaName() == "C_C4" || pWeapon->GetItemDefinitionIndex() == 49) // C4 Check
                             {
                                 bHasC4 = true;
                                 break;
@@ -603,11 +603,28 @@ void ESP::RenderGrenades(const std::vector<EntityObject_t>& vecEntities)
                             // 1. Draw a small, clean marker marking the exact center in 3D
                             Draw::AddRing(vecOrigin, 15.0f, colCircle, 32, 0, 2.0f);
 
+                            // Calculate distance
+                            float dist = 0.f;
+                            C_CSPlayerPawn* pLocalPawn = g_Globals.m_LocalPlayer.m_pPlayerPawn;
+                            if (pLocalPawn) {
+                                std::uintptr_t uLocalScene = g_Memory.ReadMemory<std::uintptr_t>(reinterpret_cast<std::uintptr_t>(pLocalPawn) + uGameSceneNodeOffset);
+                                if (uLocalScene > 0x1000) {
+                                    Vector vecLocalOrigin = g_Memory.ReadMemory<Vector>(uLocalScene + uOriginOffset);
+                                    dist = vecLocalOrigin.DistTo(vecOrigin) * 0.0254f; // units to meters
+                                }
+                            }
+
                             // 2. Draw the Text Label above the center
-                            ImVec2 textSize = Fonts::ESP->CalcTextSizeA(Fonts::ESP->FontSize, FLT_MAX, 0.f, strLabel.c_str());
+                            char szInfo[64];
+                            if (dist > 0.f)
+                                snprintf(szInfo, sizeof(szInfo), "%s [%.0fm]", strLabel.c_str(), dist);
+                            else
+                                snprintf(szInfo, sizeof(szInfo), "%s", strLabel.c_str());
+
+                            ImVec2 textSize = Fonts::ESP->CalcTextSizeA(Fonts::ESP->FontSize, FLT_MAX, 0.f, szInfo);
                             Draw::AddText(Fonts::ESP, Fonts::ESP->FontSize, 
                                           ImVec2(screenPos.x - textSize.x * 0.5f, screenPos.y - 15.f), 
-                                          strLabel, colText, DRAW_TEXT_DROPSHADOW, Color(0,0,0,200));
+                                          szInfo, colText, DRAW_TEXT_DROPSHADOW, Color(0,0,0,200));
                         }
                     }
                 }

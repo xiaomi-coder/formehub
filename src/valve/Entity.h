@@ -152,7 +152,7 @@ public:
     SCHEMA(Vector, m_vecAbsOrigin, "CGameSceneNode->m_vecAbsOrigin");
     SCHEMA(CTransform, m_nodeToWorld, "CGameSceneNode->m_nodeToWorld");
 
-    OFFSET(BoneData_t*, m_pBoneCache, 0x1E0) // m_modelState(0x160) + BoneArray(0x80)
+    OFFSET(BoneData_t*, m_pBoneCache, 0x1E0)
 };
 
 class CCollisionProperty
