@@ -136,7 +136,11 @@ void RenderThread()
                 if (pLocalPawn && pLocalPawn->IsAlive() && !pLocalPawn->m_bIsScoped())
                 {
                     std::string weaponName = pLocalPawn->m_strActiveWeaponName();
-                    if (weaponName == "awp" || weaponName == "ssg08" || weaponName == "scar20" || weaponName == "g3sg1")
+                    std::transform(weaponName.begin(), weaponName.end(), weaponName.begin(), ::tolower);
+                    if (weaponName.find("awp") != std::string::npos || 
+                        weaponName.find("ssg08") != std::string::npos || 
+                        weaponName.find("scar20") != std::string::npos || 
+                        weaponName.find("g3sg1") != std::string::npos)
                     {
                         ImVec2 center(Window::m_iWidth * 0.5f, Window::m_iHeight * 0.5f);
                         Draw::AddCircle(center, 2.5f, Color(255, 30, 30, 255), 12, DRAW_CIRCLE_FILLED | DRAW_CIRCLE_OUTLINE, Color(0, 0, 0, 200), 1.5f);
@@ -606,7 +610,7 @@ bool MainLoop(LPVOID lpParameter)
     }
 
     // Hide console
-    DetachConsole();
+    // DetachConsole();
 
     try
     {
@@ -642,7 +646,7 @@ bool MainLoop(LPVOID lpParameter)
 // -----------------------------------------------------------------------
 int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPreviousInstance, LPSTR pArgs, int iCmdShow)
 {
-    ConsoleAttach(X("External Base"));
+    // ConsoleAttach(X("External Base")); // Disabled to hide console from users
     g_Globals.m_hDll = hInstance;
 
     if (!MainLoop(hInstance))

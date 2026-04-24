@@ -244,6 +244,7 @@ static void KeyBind(const char* label, int& key, const char* id)
 void Gui::Initialize(unsigned int uFontFlags)
 {
     ImGuiIO& io = ImGui::GetIO();
+    io.IniFilename = nullptr; // Disable imgui.ini generation
 
     ApplyHackerTheme();
 
@@ -836,9 +837,11 @@ void Gui::Render()
                 ImGui::SetNextItemWidth(120.f);
                 ImGui::InputInt(X("##menukey"), &CONFIG_GET(int, g_Variables.m_Gui.m_iMenuKey));
 
-                ImGui::Text("Yopish tugmasi:");
-                ImGui::SetNextItemWidth(120.f);
-                ImGui::InputInt(X("##unloadkey"), &CONFIG_GET(int, g_Variables.m_Gui.m_iUnloadKey));
+                ImGui::Spacing();
+                ImGui::PushStyleColor(ImGuiCol_Text, C(255, 200, 50));
+                ImGui::Text("  [DELETE] = Hammasini o'chirish/yoqish (Panic)");
+                ImGui::Text("  [END]    = Dasturni yopish");
+                ImGui::PopStyleColor();
 
                 ImGui::Checkbox(X("Ekran yozishdan yashirish"),
                     &CONFIG_GET(bool, g_Variables.m_Gui.m_bExcludeFromDesktopCapture));

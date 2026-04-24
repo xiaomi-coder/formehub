@@ -278,26 +278,26 @@ void ESP::DrawSkeleton(C_CSPlayerPawn* pPawn, const Color& col)
     if (!pBones || reinterpret_cast<std::uintptr_t>(pBones) < 0x1000) return;
 
     // pairs: { parent, child }
+    // CS2 bone indices (may need adjustment per update)
     static const std::pair<int,int> skeleton[] = {
-        {6,  5},   // neck -> head
+        {6,  5},   // head -> neck
         {5,  4},   // spine top
-        {4,  3},   // spine mid
-        {3,  2},   // spine low
+        {4,  2},   // spine low
         {2,  0},   // pelvis
         // arms
         {5,  8},   // neck -> left shoulder
         {8,  9},   // left upper arm
-        {9,  10},  // left forearm
+        {9,  11},  // left forearm -> hand
         {5,  13},  // neck -> right shoulder
         {13, 14},  // right upper arm
-        {14, 15},  // right forearm
+        {14, 16},  // right forearm -> hand
         // legs
-        {0,  22},  // pelvis -> left thigh
-        {22, 23},  // left calf
-        {23, 24},  // left foot
-        {0,  25},  // pelvis -> right thigh
-        {25, 26},  // right calf
-        {26, 27},  // right foot
+        {0,  23},  // pelvis -> left thigh
+        {23, 24},  // left calf
+        {24, 25},  // left foot
+        {0,  26},  // pelvis -> right thigh
+        {26, 27},  // right calf
+        {27, 28},  // right foot
     };
 
     for (auto& [parent, child] : skeleton)
@@ -336,13 +336,13 @@ void ESP::DrawFilledBody(C_CSPlayerPawn* pPawn, const Color& col)
 
     auto Valid = [](const ImVec2& v) { return v.x >= 0 && v.y >= 0; };
 
-    // Read bones
+    // Read bones (updated indices for CS2)
     ImVec2 head = ReadBone(6), neck = ReadBone(5);
     ImVec2 spineTop = ReadBone(4), pelvis = ReadBone(0);
-    ImVec2 lShoulder = ReadBone(8), lElbow = ReadBone(9), lHand = ReadBone(10);
-    ImVec2 rShoulder = ReadBone(13), rElbow = ReadBone(14), rHand = ReadBone(15);
-    ImVec2 lThigh = ReadBone(22), lKnee = ReadBone(23), lFoot = ReadBone(24);
-    ImVec2 rThigh = ReadBone(25), rKnee = ReadBone(26), rFoot = ReadBone(27);
+    ImVec2 lShoulder = ReadBone(8), lElbow = ReadBone(9), lHand = ReadBone(11);
+    ImVec2 rShoulder = ReadBone(13), rElbow = ReadBone(14), rHand = ReadBone(16);
+    ImVec2 lThigh = ReadBone(23), lKnee = ReadBone(24), lFoot = ReadBone(25);
+    ImVec2 rThigh = ReadBone(26), rKnee = ReadBone(27), rFoot = ReadBone(28);
 
     if (!Valid(neck) || !Valid(pelvis)) return;
 
@@ -618,17 +618,24 @@ void ESP::RenderGrenades(const std::vector<EntityObject_t>& vecEntities)
 
 void ESP::RenderWeapons(const std::vector<EntityObject_t>& vecEntities)
 {
-    if (!CONFIG_GET(bool, g_Variables.m_ESP.m_bDroppedWeapons))
+    bool bDrawWeapons = CONFIG_GET(bool, g_Variables.m_ESP.m_bDroppedWeapons);
+    bool bDrawC4Timer = CONFIG_GET(bool, g_Variables.m_Misc.m_bC4Timer);
+
+    if (!bDrawWeapons && !bDrawC4Timer)
         return;
 
     static std::uintptr_t uGameSceneNodeOffset = 0;
     static std::uintptr_t uOriginOffset = 0;
+    static std::uintptr_t uC4Blow = 0;
+    static std::uintptr_t uC4Defused = 0;
     static bool bOffsetsResolved = false;
 
     if (!bOffsetsResolved) {
         auto mapCpy = SchemaSystem::m_mapSchemaOffsets;
         uGameSceneNodeOffset = mapCpy[FNV1A::Hash("C_BaseEntity->m_pGameSceneNode")];
         uOriginOffset = mapCpy[FNV1A::Hash("CGameSceneNode->m_vecAbsOrigin")];
+        uC4Blow = mapCpy[FNV1A::HashConst("C_PlantedC4->m_flC4Blow")];
+        uC4Defused = mapCpy[FNV1A::HashConst("C_PlantedC4->m_bBombDefused")];
         bOffsetsResolved = true;
     }
 
@@ -638,8 +645,17 @@ void ESP::RenderWeapons(const std::vector<EntityObject_t>& vecEntities)
 
     for (const EntityObject_t& obj : vecEntities)
     {
-        if (obj.m_pEntity == nullptr || obj.m_eType != EEntityType::ENTITY_WEAPON)
+        if (obj.m_pEntity == nullptr || (obj.m_eType != EEntityType::ENTITY_WEAPON && obj.m_eType != EEntityType::ENTITY_PLANTEDC4))
             continue;
+
+        std::string sSchemaName = obj.m_pEntity->GetSchemaName();
+        bool bIsC4 = (sSchemaName == "C_C4" || sSchemaName == "weapon_c4");
+
+        if (obj.m_eType == EEntityType::ENTITY_WEAPON)
+        {
+            if (!bDrawWeapons && !bIsC4) continue;
+            if (bIsC4 && !bDrawWeapons && !bDrawC4Timer) continue;
+        }
 
         std::uintptr_t pEntityPtr = reinterpret_cast<std::uintptr_t>(obj.m_pEntity);
         std::uintptr_t uSceneNode = g_Memory.ReadMemory<std::uintptr_t>(pEntityPtr + uGameSceneNodeOffset);
@@ -664,8 +680,10 @@ void ESP::RenderWeapons(const std::vector<EntityObject_t>& vecEntities)
             if (Draw::WorldToScreen(vecOrigin, screenPos))
             {
                 std::string sName = obj.m_pEntity->GetSchemaName();
+                if (obj.m_eType == EEntityType::ENTITY_PLANTEDC4) sName = "C4 PLANTED!";
+
                 if (!sName.empty()) {
-                    if (sName.find("Weapon") != std::string::npos || sName == "C_DEagle" || sName == "C_AK47") {
+                    if (sName.find("Weapon") != std::string::npos || sName == "C_DEagle" || sName == "C_AK47" || sName == "C_C4" || obj.m_eType == EEntityType::ENTITY_PLANTEDC4) {
                         if (sName.find("C_Weapon") != std::string::npos) sName = sName.substr(8);
                         else if (sName.find("CWeapon") != std::string::npos) sName = sName.substr(7);
                         else if (sName.find("C_") != std::string::npos) sName = sName.substr(2);
@@ -673,7 +691,7 @@ void ESP::RenderWeapons(const std::vector<EntityObject_t>& vecEntities)
                         std::string sLowerName = sName;
                         std::transform(sLowerName.begin(), sLowerName.end(), sLowerName.begin(), ::tolower);
 
-                        Color colWeapon = GetWeaponColor(sLowerName);
+                        Color colWeapon = (sName == "C4" || obj.m_eType == EEntityType::ENTITY_PLANTEDC4) ? Color(255, 50, 50, 255) : GetWeaponColor(sLowerName);
 
                         float flBottomY = screenPos.y; // Track bottom of drawn element
 
@@ -705,6 +723,31 @@ void ESP::RenderWeapons(const std::vector<EntityObject_t>& vecEntities)
                         {
                             std::transform(sName.begin(), sName.end(), sName.begin(), ::toupper);
                             std::string strLabel = "[" + sName + "]";
+
+                            // Add C4 timer logic if it's planted C4
+                            if (obj.m_eType == EEntityType::ENTITY_PLANTEDC4)
+                            {
+                                float flC4Blow = g_Memory.ReadMemory<float>(pEntityPtr + uC4Blow);
+                                float flCur = g_Interfaces.m_GlobalVars.m_flCurrentTime;
+                                float flTimeLeft = flC4Blow - flCur;
+                                if (flTimeLeft < 0.f) flTimeLeft = 0.f;
+                                
+                                char szTimer[64];
+                                snprintf(szTimer, sizeof(szTimer), "[C4 PLANTED! - %.1f s]", flTimeLeft);
+                                strLabel = szTimer;
+                                
+                                bool bDefused = g_Memory.ReadMemory<bool>(pEntityPtr + uC4Defused);
+                                if (bDefused) {
+                                    strLabel = "[C4 DEFUSED!]";
+                                    colWeapon = Color(100, 255, 100, 255);
+                                }
+                                else if (flTimeLeft < 10.0f && flTimeLeft > 0.0f) {
+                                    // Flash red/yellow
+                                    if ((int)(flCur * 10) % 2 == 0) colWeapon = Color(255, 255, 0, 255);
+                                    else colWeapon = Color(255, 0, 0, 255);
+                                }
+                            }
+
                             ImVec2 textSize = Fonts::ESP->CalcTextSizeA(Fonts::ESP->FontSize, FLT_MAX, 0.f, strLabel.c_str());
                             Draw::AddText(Fonts::ESP, Fonts::ESP->FontSize, 
                                           ImVec2(screenPos.x - textSize.x * 0.5f, screenPos.y), 

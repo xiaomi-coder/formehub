@@ -26,3 +26,13 @@ default.json
 # OS
 Thumbs.db
 Desktop.ini
+
+# Debug and Temp files
+*.txt
+!CMakeLists.txt
+*.ini
+*.ps1
+cheat_output.txt
+esp_debug.txt
+schema_dump.txt
+imgui.ini

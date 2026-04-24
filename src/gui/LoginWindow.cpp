@@ -83,6 +83,7 @@ bool LoginWindow::Create()
     ImGui_ImplDX11_Init(m_pDevice, m_pContext);
 
     ImGuiIO& io = ImGui::GetIO();
+    io.IniFilename = nullptr; // Disable imgui.ini generation
     ImFontConfig cfg = {};
     cfg.FontBuilderFlags = ImGuiFreeTypeBuilderFlags_LightHinting | ImGuiFreeTypeBuilderFlags_Bold;
     io.Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\Verdana.ttf", 16, &cfg, io.Fonts->GetGlyphRangesCyrillic());

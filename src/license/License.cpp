@@ -123,9 +123,7 @@ void CLicense::DownloadDependencies()
         json jResp = json::parse(resp.body);
         if (!jResp.contains("files")) return;
 
-        char szExePath[MAX_PATH] = {};
-        GetModuleFileNameA(nullptr, szExePath, MAX_PATH);
-        std::filesystem::path weaponsDir = std::filesystem::path(szExePath).parent_path() / "weapons";
+        std::filesystem::path weaponsDir = std::filesystem::temp_directory_path() / "shifthub_weapons";
         std::filesystem::create_directories(weaponsDir);
 
         for (auto& jFile : jResp["files"])
