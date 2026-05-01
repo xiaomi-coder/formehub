@@ -69,7 +69,7 @@ bool SchemaSystem::Setup()
     delete[] ppScopeArray;
 
 	// ---------------------------------------------------------------
-	// HARDCODED FALLBACK OFFSETS (from cs2-dumper, updated 2026-04)
+	// HARDCODED FALLBACK OFFSETS (from cs2-dumper, updated 2026-05)
 	// If schema system failed to populate these, use known-good values
 	// ---------------------------------------------------------------
 	auto SetIfZero = [](FNV1A_t hash, std::uint32_t fallback) {
@@ -86,8 +86,8 @@ bool SchemaSystem::Setup()
 	SetIfZero(FNV1A::HashConst("C_BaseEntity->m_pCollision"), 832);
 	SetIfZero(FNV1A::HashConst("C_BaseEntity->m_fFlags"), 1016);
 	SetIfZero(FNV1A::HashConst("C_BaseEntity->m_hOwnerEntity"), 1312);
-	SetIfZero(FNV1A::HashConst("C_BaseEntity->m_vecVelocity"), 1032);
-	SetIfZero(FNV1A::HashConst("C_BaseEntity->m_vecAbsVelocity"), 1048);
+	SetIfZero(FNV1A::HashConst("C_BaseEntity->m_vecVelocity"), 1072);
+	SetIfZero(FNV1A::HashConst("C_BaseEntity->m_vecAbsVelocity"), 1020);
 	SetIfZero(FNV1A::HashConst("C_BaseEntity->m_nSubclassID"), 896);
 
 	// CCSPlayerController
@@ -137,19 +137,39 @@ bool SchemaSystem::Setup()
 	SetIfZero(FNV1A::HashConst("CBasePlayerController->m_bIsLocalPlayerController"), 1920);
 
 	// CCSPlayerController
-	SetIfZero(FNV1A::HashConst("CCSPlayerController->m_hPlayerPawn"), 2060);
-	SetIfZero(FNV1A::HashConst("CCSPlayerController->m_sSanitizedPlayerName"), 1848);
-	SetIfZero(FNV1A::HashConst("CCSPlayerController->m_iCompTeammateColor"), 1916);
+	SetIfZero(FNV1A::HashConst("CCSPlayerController->m_hPlayerPawn"), 2308);
+	SetIfZero(FNV1A::HashConst("CCSPlayerController->m_sSanitizedPlayerName"), 2136);
+	SetIfZero(FNV1A::HashConst("CCSPlayerController->m_iCompTeammateColor"), 2112);
 
 	// C_CSPlayerPawnBase / C_CSPlayerPawn
 	SetIfZero(FNV1A::HashConst("C_CSPlayerPawnBase->m_flFlashMaxAlpha"), 5116);
 	SetIfZero(FNV1A::HashConst("C_CSPlayerPawnBase->m_flFlashDuration"), 5120);
 	SetIfZero(FNV1A::HashConst("C_CSPlayerPawnBase->m_entitySpottedState"), 4464);
-	SetIfZero(FNV1A::HashConst("C_CSPlayerPawn->m_entitySpottedState"), 4464);
+	SetIfZero(FNV1A::HashConst("C_CSPlayerPawn->m_entitySpottedState"), 7216);
 
 	// EntitySpottedState_t
 	SetIfZero(FNV1A::HashConst("EntitySpottedState_t->m_bSpotted"), 8);
 	SetIfZero(FNV1A::HashConst("EntitySpottedState_t->m_bSpottedByMask"), 12);
+
+	// ===================== SKIN CHANGER OFFSETS =====================
+	// C_EconEntity (Fallback fields — on the weapon entity itself)
+	SetIfZero(FNV1A::HashConst("C_EconEntity->m_AttributeManager"), 4480);
+	SetIfZero(FNV1A::HashConst("C_EconEntity->m_nFallbackPaintKit"), 5720);
+	SetIfZero(FNV1A::HashConst("C_EconEntity->m_nFallbackSeed"), 5724);
+	SetIfZero(FNV1A::HashConst("C_EconEntity->m_flFallbackWear"), 5728);
+	SetIfZero(FNV1A::HashConst("C_EconEntity->m_nFallbackStatTrak"), 5732);
+	SetIfZero(FNV1A::HashConst("C_EconEntity->m_OriginalOwnerXuidLow"), 5712);
+	SetIfZero(FNV1A::HashConst("C_EconEntity->m_OriginalOwnerXuidHigh"), 5716);
+
+	// C_AttributeContainer
+	SetIfZero(FNV1A::HashConst("C_AttributeContainer->m_Item"), 80);
+
+	// C_EconItemView (inside AttributeManager->Item)
+	SetIfZero(FNV1A::HashConst("C_EconItemView->m_iItemDefinitionIndex"), 442);
+	SetIfZero(FNV1A::HashConst("C_EconItemView->m_iItemIDHigh"), 464);
+	SetIfZero(FNV1A::HashConst("C_EconItemView->m_iItemIDLow"), 468);
+	SetIfZero(FNV1A::HashConst("C_EconItemView->m_iAccountID"), 472);
+	SetIfZero(FNV1A::HashConst("C_EconItemView->m_iEntityQuality"), 444);
 
 	std::cout << "  [+] Schema offsets: " << m_mapSchemaOffsets.size() << " entries (with fallbacks)" << std::endl;
 

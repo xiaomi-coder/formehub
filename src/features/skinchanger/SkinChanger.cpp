@@ -1,4 +1,6 @@
 #include "../../Includes.h"
+#include <thread>
+#include <chrono>
 
 // -----------------------------------------------------------------------
 // Skin databases (PaintKit ID, Display Name)
@@ -501,114 +503,16 @@ void SkinChanger::Run()
     C_NetworkUtlVectorBaseSimple hWeapons = pWeaponServices->m_hMyWeapons();
     if (hWeapons.m_nSize <= 0 || hWeapons.m_nSize > 16 || hWeapons.m_pData < 0x1000) return;
 
-    // Cache schema offsets — resolved once with multiple fallback alternatives
-    static std::once_flag flagResolve;
-    static std::uintptr_t uAttrMgr = 0, uItem = 0;
-    static std::uintptr_t uItemIDHigh = 0, uFallbackPaint = 0, uFallbackSeed = 0;
-    static std::uintptr_t uFallbackWear = 0, uFallbackStatTrak = 0, uItemDefIdx = 0;
-    static bool bResolved = false;
-    // If fallback fields are on the entity itself (not in EconItemView)
-    static bool bFallbackOnEntity = false;
-
-    std::call_once(flagResolve, []()
-    {
-        uAttrMgr = ResolveSchemaOffset({
-            "C_EconEntity->m_AttributeManager",
-            "CEconEntity->m_AttributeManager"
-        });
-        uItem = ResolveSchemaOffset({
-            "C_AttributeContainer->m_Item",
-            "CAttributeContainer->m_Item"
-        });
-        uItemIDHigh = ResolveSchemaOffset({
-            "C_EconItemView->m_iItemIDHigh",
-            "CEconItemView->m_iItemIDHigh"
-        });
-        uItemDefIdx = ResolveSchemaOffset({
-            "C_EconItemView->m_iItemDefinitionIndex",
-            "CEconItemView->m_iItemDefinitionIndex"
-        });
-
-        // Fallback paint kit — try many variants
-        uFallbackPaint = ResolveSchemaOffset({
-            "C_EconItemView->m_nFallbackPaintKit",
-            "CEconItemView->m_nFallbackPaintKit",
-            "C_EconEntity->m_nFallbackPaintKit",
-            "CEconEntity->m_nFallbackPaintKit"
-        });
-        uFallbackSeed = ResolveSchemaOffset({
-            "C_EconItemView->m_nFallbackSeed",
-            "CEconItemView->m_nFallbackSeed",
-            "C_EconEntity->m_nFallbackSeed",
-            "CEconEntity->m_nFallbackSeed"
-        });
-        uFallbackWear = ResolveSchemaOffset({
-            "C_EconItemView->m_flFallbackWear",
-            "CEconItemView->m_flFallbackWear",
-            "C_EconEntity->m_flFallbackWear",
-            "CEconEntity->m_flFallbackWear"
-        });
-        uFallbackStatTrak = ResolveSchemaOffset({
-            "C_EconItemView->m_nFallbackStatTrak",
-            "CEconItemView->m_nFallbackStatTrak",
-            "C_EconEntity->m_nFallbackStatTrak",
-            "CEconEntity->m_nFallbackStatTrak"
-        });
-
-        // Check if fallback fields are on the entity (C_EconEntity) level
-        // If so, we need to offset from weapon base, not EconItemView
-        {
-            auto it = SchemaSystem::m_mapSchemaOffsets.find(FNV1A::Hash("C_EconEntity->m_nFallbackPaintKit"));
-            if (it != SchemaSystem::m_mapSchemaOffsets.end() && it->second != 0)
-                bFallbackOnEntity = true;
-            auto it2 = SchemaSystem::m_mapSchemaOffsets.find(FNV1A::Hash("CEconEntity->m_nFallbackPaintKit"));
-            if (it2 != SchemaSystem::m_mapSchemaOffsets.end() && it2->second != 0)
-                bFallbackOnEntity = true;
-        }
-
-        bResolved = (uAttrMgr != 0 && uItem != 0);
-
-        // Always print diagnostics to console (not just Debug)
-        std::cout << "  [SKIN] Schema offset resolution:" << std::endl;
-        std::cout << "  [SKIN]   AttributeManager: 0x" << std::hex << uAttrMgr << std::endl;
-        std::cout << "  [SKIN]   Item:             0x" << uItem << std::endl;
-        std::cout << "  [SKIN]   ItemIDHigh:       0x" << uItemIDHigh << std::endl;
-        std::cout << "  [SKIN]   ItemDefIdx:       0x" << uItemDefIdx << std::endl;
-        std::cout << "  [SKIN]   FallbackPaint:    0x" << uFallbackPaint << std::endl;
-        std::cout << "  [SKIN]   FallbackSeed:     0x" << uFallbackSeed << std::endl;
-        std::cout << "  [SKIN]   FallbackWear:     0x" << uFallbackWear << std::endl;
-        std::cout << "  [SKIN]   FallbackStatTrak: 0x" << uFallbackStatTrak << std::endl;
-        std::cout << "  [SKIN]   FallbackOnEntity: " << (bFallbackOnEntity ? "YES" : "NO") << std::endl;
-        std::cout << "  [SKIN]   Resolved:         " << (bResolved ? "YES" : "FAILED") << std::dec << std::endl;
-
-        if (uFallbackPaint == 0)
-        {
-            std::cout << "  [SKIN] WARNING: FallbackPaintKit not found! Scanning schema map..." << std::endl;
-            // Dump all schema entries containing "Fallback" or "PaintKit" for debugging
-            for (const auto& [hash, offset] : SchemaSystem::m_mapSchemaOffsets)
-            {
-                // We can't reverse the hash, but we can show any offsets that might be relevant
-                // by checking if common known field names match
-                static const char* probeNames[] = {
-                    "C_EconItemView->m_nFallbackPaintKit",
-                    "CEconItemView->m_nFallbackPaintKit",
-                    "C_EconEntity->m_nFallbackPaintKit",
-                    "C_BaseEntity->m_nFallbackPaintKit",
-                };
-                for (const char* probe : probeNames)
-                {
-                    if (FNV1A::Hash(probe) == hash)
-                        std::cout << "  [SKIN]   FOUND: " << probe << " = 0x" << std::hex << offset << std::dec << std::endl;
-                }
-            }
-        }
-    });
-
-    // If we don't have the base offsets, cannot proceed
-    if (!bResolved) return;
-
-    // If we don't have fallback paint kit offset, we can't apply skins
-    if (uFallbackPaint == 0) return;
+    // Hardcoded offsets from client_dll.json — ALWAYS correct for current CS2 version
+    static const std::uintptr_t uAttrMgr       = 4480;  // C_EconEntity->m_AttributeManager
+    static const std::uintptr_t uItem           = 80;    // C_AttributeContainer->m_Item
+    static const std::uintptr_t uItemIDHigh     = 464;   // C_EconItemView->m_iItemIDHigh
+    static const std::uintptr_t uItemDefIdx     = 442;   // C_EconItemView->m_iItemDefinitionIndex
+    static const std::uintptr_t uFallbackPaint  = 5720;  // C_EconEntity->m_nFallbackPaintKit
+    static const std::uintptr_t uFallbackSeed   = 5724;  // C_EconEntity->m_nFallbackSeed
+    static const std::uintptr_t uFallbackWear   = 5728;  // C_EconEntity->m_flFallbackWear
+    static const std::uintptr_t uFallbackStatTrak = 5732; // C_EconEntity->m_nFallbackStatTrak
+    static const std::uintptr_t uAccountID      = 472;   // C_EconItemView->m_iAccountID
 
     for (int i = 0; i < hWeapons.m_nSize; i++)
     {
@@ -637,13 +541,15 @@ void SkinChanger::Run()
                 debugFile << "uItem: 0x" << uItem << "\n";
                 debugFile << "uItemDefIdx: 0x" << uItemDefIdx << "\n";
                 debugFile << "nDefIndex: " << std::dec << nDefIndex << "\n";
-                debugFile << "iItemIDHigh: 0x" << std::hex << uItemIDHigh << "\n";
-                debugFile << "iAccountID: 0x" << (SchemaSystem::m_mapSchemaOffsets[FNV1A::Hash("C_EconItemView->m_iAccountID")]) << "\n";
-                debugFile << "FallbackPaint: 0x" << uFallbackPaint << "\n";
-                debugFile << "FallbackOnEntity: " << (bFallbackOnEntity ? "YES" : "NO") << "\n";
+                debugFile << "uItemIDHigh: 0x" << std::hex << uItemIDHigh << "\n";
+                debugFile << "uFallbackPaint: 0x" << uFallbackPaint << "\n";
+                debugFile << "uFallbackSeed: 0x" << uFallbackSeed << "\n";
+                debugFile << "uFallbackWear: 0x" << uFallbackWear << "\n";
                 
                 int readItemHigh = g_Memory.ReadMemory<int>(uWeaponAddr + uAttrMgr + uItem + uItemIDHigh);
+                int readPaintKit = g_Memory.ReadMemory<int>(uWeaponAddr + uFallbackPaint);
                 debugFile << "Current ItemIDHigh Value: " << std::dec << readItemHigh << "\n";
+                debugFile << "Current FallbackPaintKit Value: " << readPaintKit << "\n";
                 debugFile.close();
                 bDumpedOnce = true;
             }
@@ -659,95 +565,45 @@ void SkinChanger::Run()
         if (it == m_mapWeaponConfigs.end()) continue;
 
         WeaponSkinConfig_t& cfg = it->second;
-        if (cfg.m_nPaintKit == 0) continue; // Default = skip
+        if (cfg.m_nPaintKit == 0) continue;
 
-        // Use a flag to track if we changed anything this tick and must force mesh updates
-        bool bNeedsVisualUpdate = false;
-
-        // Base address for EconItemView (where all Fallback fields are stored in CS2)
         std::uintptr_t uEconBase = uWeaponAddr + uAttrMgr + uItem;
 
-        // Read current paint kit on the 3rd person weapon
-        int iCurrentPaintKit = 0;
-        if (uFallbackPaint > 0)
-            iCurrentPaintKit = g_Memory.ReadMemory<int>(uEconBase + uFallbackPaint);
+        // Check if this weapon already has our skin applied
+        int iCurrentPaintKit = g_Memory.ReadMemory<int>(uWeaponAddr + uFallbackPaint);
+        int iCurrentItemIDHigh = g_Memory.ReadMemory<int>(uEconBase + uItemIDHigh);
 
-        if (iCurrentPaintKit != cfg.m_nPaintKit)
+        // Only write if not yet applied (ItemIDHigh != -1 or PaintKit wrong)
+        if (iCurrentItemIDHigh != -1 || iCurrentPaintKit != cfg.m_nPaintKit)
         {
-            // Set ItemIDHigh to -1 to force application of fallbacks
-            if (uItemIDHigh > 0)
+            // 1. Force fallback mode
+            g_Memory.WriteMemory<int>(uEconBase + uItemIDHigh, -1);
+            g_Memory.WriteMemory<int>(uEconBase + 468, -1);  // m_iItemIDLow
+            g_Memory.WriteMemory<int>(uEconBase + uAccountID, 0);
+
+            // 2. Write paint kit and other fallback values
+            g_Memory.WriteMemory<int>(uWeaponAddr + uFallbackPaint, cfg.m_nPaintKit);
+            g_Memory.WriteMemory<float>(uWeaponAddr + uFallbackWear, cfg.m_flWear);
+            g_Memory.WriteMemory<int>(uWeaponAddr + uFallbackSeed, cfg.m_nSeed);
+            if (cfg.m_nStatTrak >= 0)
+                g_Memory.WriteMemory<int>(uWeaponAddr + uFallbackStatTrak, cfg.m_nStatTrak);
+
+            // 3. Force engine to rebuild weapon model:
+            //    Trick: temporarily change ItemDefinitionIndex then restore it
+            //    This makes the engine think a new weapon was picked up
+            std::uint16_t originalDefIdx = g_Memory.ReadMemory<std::uint16_t>(uEconBase + uItemDefIdx);
+            g_Memory.WriteMemory<std::uint16_t>(uEconBase + uItemDefIdx, originalDefIdx + 1);
+            // Small delay to let engine notice change
+            std::this_thread::sleep_for(std::chrono::milliseconds(50));
+            g_Memory.WriteMemory<std::uint16_t>(uEconBase + uItemDefIdx, originalDefIdx);
+
+            // 4. Force MeshGroupMask = 2
+            static const std::uintptr_t uGameSceneNode = 816;
+            static const std::uintptr_t uMeshGroupMask = 336 + 456;
+            std::uintptr_t pSceneNode = g_Memory.ReadMemory<std::uintptr_t>(uWeaponAddr + uGameSceneNode);
+            if (pSceneNode > 0x1000)
             {
-                g_Memory.WriteMemory<int>(uEconBase + uItemIDHigh, -1);
-            }
-
-            // Write custom fallback values ALWAYS to EconItemView
-            if (uFallbackPaint > 0) g_Memory.WriteMemory<int>(uEconBase + uFallbackPaint, cfg.m_nPaintKit);
-            if (uFallbackWear > 0) g_Memory.WriteMemory<float>(uEconBase + uFallbackWear, cfg.m_flWear);
-            if (uFallbackSeed > 0) g_Memory.WriteMemory<int>(uEconBase + uFallbackSeed, cfg.m_nSeed);
-            if (uFallbackStatTrak > 0 && cfg.m_nStatTrak >= 0) g_Memory.WriteMemory<int>(uEconBase + uFallbackStatTrak, cfg.m_nStatTrak);
-
-            bNeedsVisualUpdate = true;
-        }
-
-        // Fetch View Model offset and pointer
-        std::uintptr_t uVmAddr = 0;
-        if (pWeaponServices && pLocalPawn && pWeaponServices->m_hActiveWeapon().Get() == pWeapon)
-        {
-            auto pVmServices = pLocalPawn->m_pViewModelServices();
-            if (pVmServices)
-            {
-                C_BaseModelEntity* pViewModel = pVmServices->m_hViewModel().Get();
-                if (pViewModel && reinterpret_cast<std::uintptr_t>(pViewModel) > 0x1000)
-                {
-                    uVmAddr = reinterpret_cast<std::uintptr_t>(pViewModel);
-                    
-                    int iVmPaintKit = 0;
-                    if (uFallbackPaint > 0) iVmPaintKit = g_Memory.ReadMemory<int>(uVmAddr + uFallbackPaint);
-
-                    // If View Model was recreated by game engine (e.g., weapon switch), it loses fallbacks
-                    if (iVmPaintKit != cfg.m_nPaintKit)
-                    {
-                        if (uFallbackPaint > 0) g_Memory.WriteMemory<int>(uVmAddr + uFallbackPaint, cfg.m_nPaintKit);
-                        if (uFallbackWear > 0) g_Memory.WriteMemory<float>(uVmAddr + uFallbackWear, cfg.m_flWear);
-                        if (uFallbackSeed > 0) g_Memory.WriteMemory<int>(uVmAddr + uFallbackSeed, cfg.m_nSeed);
-                        if (uFallbackStatTrak > 0 && cfg.m_nStatTrak >= 0) g_Memory.WriteMemory<int>(uVmAddr + uFallbackStatTrak, cfg.m_nStatTrak);
-                        
-                        bNeedsVisualUpdate = true;
-                    }
-                }
-            }
-        }
-
-        // Force CS2 to visually re-render the mesh if we modified attributes
-        if (bNeedsVisualUpdate)
-        {
-            static std::uintptr_t uGameSceneNodeOffset = 0;
-            static bool bSceneResolved = false;
-            if (!bSceneResolved) {
-                auto itScene = SchemaSystem::m_mapSchemaOffsets.find(FNV1A::Hash("C_BaseEntity->m_pGameSceneNode"));
-                if (itScene != SchemaSystem::m_mapSchemaOffsets.end())
-                    uGameSceneNodeOffset = itScene->second;
-                bSceneResolved = true;
-            }
-
-            if (uGameSceneNodeOffset > 0)
-            {
-                // Update 3rd-person Weapon mesh
-                std::uintptr_t uSceneNode = g_Memory.ReadMemory<std::uintptr_t>(uWeaponAddr + uGameSceneNodeOffset);
-                if (uSceneNode > 0x1000)
-                {
-                    g_Memory.WriteMemory<int>(uSceneNode + 0x160 + 0x18, 2);
-                }
-
-                // Update 1st-person View Model mesh
-                if (uVmAddr > 0)
-                {
-                    std::uintptr_t uVmSceneNode = g_Memory.ReadMemory<std::uintptr_t>(uVmAddr + uGameSceneNodeOffset);
-                    if (uVmSceneNode > 0x1000)
-                    {
-                        g_Memory.WriteMemory<int>(uVmSceneNode + 0x160 + 0x18, 2);
-                    }
-                }
+                g_Memory.WriteMemory<std::uint64_t>(pSceneNode + uMeshGroupMask, 2);
             }
         }
     }

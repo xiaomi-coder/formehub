@@ -610,6 +610,85 @@ void Gui::Render()
             }
 
             // ============================================================
+            // GRENADE HELPER
+            // ============================================================
+            if (ImGui::BeginTabItem(X("[ GRANATA ]")))
+            {
+                ImGui::Spacing();
+                SectionTitle("Granata Yordamchi (Grenade Helper)");
+
+                ImGui::PushStyleColor(ImGuiCol_Text, C(100, 100, 120));
+                ImGui::Text("  Xaritadagi ma'lum joylardan smoke/flash/molotov tashlash yo'lini ko'rsatadi.");
+                ImGui::Text("  Pozitsiyaga yaqinlashganingizda nishon va yo'nalish ko'rsatiladi.");
+                ImGui::PopStyleColor();
+                ImGui::Spacing();
+
+                ImGui::Checkbox(X("Granata yordamchini yoqish"), &CONFIG_GET(bool, g_Variables.m_GrenadeHelper.m_bEnable));
+
+                if (CONFIG_GET(bool, g_Variables.m_GrenadeHelper.m_bEnable))
+                {
+                    ImGui::Spacing();
+                    ImGui::Checkbox(X("Barcha joylarni xaritada ko'rsatish"), &CONFIG_GET(bool, g_Variables.m_GrenadeHelper.m_bShowAll));
+
+                    if (CONFIG_GET(bool, g_Variables.m_GrenadeHelper.m_bShowAll))
+                    {
+                        ImGui::SetNextItemWidth(200.f);
+                        ImGui::SliderFloat(X("Ko'rsatish masofasi"), &CONFIG_GET(float, g_Variables.m_GrenadeHelper.m_flMaxDistance), 500.f, 5000.f, "%.0f unit");
+                    }
+
+                    ImGui::Spacing();
+                    SectionTitle("Granata turlari filtri");
+
+                    ImGui::Checkbox(X("Smoke"),   &CONFIG_GET(bool, g_Variables.m_GrenadeHelper.m_bShowSmoke));
+                    ImGui::SameLine(150.f);
+                    ImGui::Checkbox(X("Flash"),   &CONFIG_GET(bool, g_Variables.m_GrenadeHelper.m_bShowFlash));
+
+                    ImGui::Checkbox(X("Molotov"), &CONFIG_GET(bool, g_Variables.m_GrenadeHelper.m_bShowMolotov));
+                    ImGui::SameLine(150.f);
+                    ImGui::Checkbox(X("HE"),      &CONFIG_GET(bool, g_Variables.m_GrenadeHelper.m_bShowHE));
+
+                    ImGui::Spacing();
+                    ImGui::Spacing();
+                    SectionTitle("Mavjud xaritalar");
+
+                    // Show available maps and lineup counts
+                    for (int i = 0; i < GrenadeHelper::g_nMapCount; i++)
+                    {
+                        const GrenadeMap_t& map = GrenadeHelper::g_vecMaps[i];
+                        
+                        // Count by type
+                        int nSmoke = 0, nFlash = 0, nMolly = 0, nHE = 0;
+                        for (int j = 0; j < map.m_nLineupCount; j++)
+                        {
+                            switch (map.m_pLineups[j].m_eType)
+                            {
+                            case GRENADE_SMOKE:   nSmoke++; break;
+                            case GRENADE_FLASH:   nFlash++; break;
+                            case GRENADE_MOLOTOV: nMolly++; break;
+                            case GRENADE_HE:      nHE++;    break;
+                            }
+                        }
+
+                        ImGui::PushStyleColor(ImGuiCol_Text, C(0, 220, 70));
+                        ImGui::Text("  %s", map.m_szMapName);
+                        ImGui::PopStyleColor();
+                        ImGui::SameLine(140.f);
+                        ImGui::PushStyleColor(ImGuiCol_Text, C(150, 170, 160));
+                        ImGui::Text("%d lineup  |  S:%d  F:%d  M:%d  HE:%d",
+                            map.m_nLineupCount, nSmoke, nFlash, nMolly, nHE);
+                        ImGui::PopStyleColor();
+                    }
+
+                    ImGui::Spacing();
+                    ImGui::PushStyleColor(ImGuiCol_Text, C(255, 200, 50));
+                    ImGui::Text("  Qo'shimcha xaritalar keyingi yangilanishda qo'shiladi!");
+                    ImGui::PopStyleColor();
+                }
+
+                ImGui::EndTabItem();
+            }
+
+            // ============================================================
             // INVENTORY  (Skin Changer)
             // ============================================================
             if (ImGui::BeginTabItem(X("[ INVENTAR ]")))

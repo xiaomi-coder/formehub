@@ -198,6 +198,7 @@
     <ClInclude Include="src\features\radar\Radar.h" />
     <ClInclude Include="src\features\skinchanger\SkinChanger.h" />
     <ClInclude Include="src\features\triggerbot\Triggerbot.h" />
+    <ClInclude Include="src\features\grenadehelper\GrenadeHelper.h" />
     <ClInclude Include="src\features\world\World.h" />
     <ClInclude Include="src\license\HttpClient.h" />
     <ClInclude Include="src\license\License.h" />
@@ -248,6 +249,7 @@
     <ClCompile Include="src\features\radar\Radar.cpp" />
     <ClCompile Include="src\features\skinchanger\SkinChanger.cpp" />
     <ClCompile Include="src\features\triggerbot\Triggerbot.cpp" />
+    <ClCompile Include="src\features\grenadehelper\GrenadeHelper.cpp" />
     <ClCompile Include="src\features\world\World.cpp" />
     <ClCompile Include="src\Globals.cpp" />
     <ClCompile Include="src\gui\Gui.cpp" />

@@ -125,6 +125,18 @@ public:
 		CONFIG_ADD_VARIABLE(float, m_flScaleY,        1.0f);
 	}; RCSVariables_t m_RCS;
 
+	// ================ GRENADE HELPER ==================
+	struct GrenadeHelperVariables_t
+	{
+		CONFIG_ADD_VARIABLE(bool,  m_bEnable,       false);
+		CONFIG_ADD_VARIABLE(bool,  m_bShowAll,      true);  // Show all lineups as world markers
+		CONFIG_ADD_VARIABLE(float, m_flMaxDistance,  2000.f); // Max render distance for world markers
+		CONFIG_ADD_VARIABLE(bool,  m_bShowSmoke,    true);
+		CONFIG_ADD_VARIABLE(bool,  m_bShowFlash,    true);
+		CONFIG_ADD_VARIABLE(bool,  m_bShowMolotov,  true);
+		CONFIG_ADD_VARIABLE(bool,  m_bShowHE,       true);
+	}; GrenadeHelperVariables_t m_GrenadeHelper;
+
 	// ================== WORLD ========================
 	struct WorldVariables_t
 	{

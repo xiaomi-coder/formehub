@@ -540,9 +540,47 @@ void ESP::RenderGlowInfo(CCSPlayerController* pController, C_CSPlayerPawn* pPawn
 // -----------------------------------------------------------------------
 // Render global map grenades (Smoke, Molotov, HE)
 // -----------------------------------------------------------------------
+// -----------------------------------------------------------------------
+// Grenade position tracking for trajectory prediction
+// -----------------------------------------------------------------------
+struct GrenadeTrack_t
+{
+    std::uintptr_t  m_uEntityPtr = 0;
+    Vector          m_vecPrevPos = {};
+    Vector          m_vecVelocity = {};
+    bool            m_bHasPrev = false;
+    int             m_nTicksAlive = 0;
+};
+static std::vector<GrenadeTrack_t> s_vecGrenadeTracker;
+
+static GrenadeTrack_t* FindOrCreateTracker(std::uintptr_t uEntityPtr)
+{
+    for (auto& t : s_vecGrenadeTracker)
+    {
+        if (t.m_uEntityPtr == uEntityPtr)
+            return &t;
+    }
+    // Eski trackerlar uchun limit
+    if (s_vecGrenadeTracker.size() > 32)
+        s_vecGrenadeTracker.erase(s_vecGrenadeTracker.begin());
+
+    s_vecGrenadeTracker.push_back({ uEntityPtr, {}, {}, false, 0 });
+    return &s_vecGrenadeTracker.back();
+}
+
 void ESP::RenderGrenades(const std::vector<EntityObject_t>& vecEntities)
 {
     if (!CONFIG_GET(bool, g_Variables.m_Misc.m_bGrenadeWarning)) return;
+
+    // Barcha trackerlarni "eskirgan" deb belgilash
+    for (auto& t : s_vecGrenadeTracker)
+        t.m_nTicksAlive++;
+
+    // 120 tickdan eski trackerlarni o'chirish
+    s_vecGrenadeTracker.erase(
+        std::remove_if(s_vecGrenadeTracker.begin(), s_vecGrenadeTracker.end(),
+            [](const GrenadeTrack_t& t) { return t.m_nTicksAlive > 120; }),
+        s_vecGrenadeTracker.end());
 
     for (const EntityObject_t& obj : vecEntities)
     {
@@ -550,85 +588,155 @@ void ESP::RenderGrenades(const std::vector<EntityObject_t>& vecEntities)
             continue;
 
         bool bIsSmoke = (obj.m_uHashedName == FNV1A::HashConst("C_SmokeGrenadeProjectile"));
-        bool bIsMolotov = (obj.m_uHashedName == FNV1A::HashConst("C_MolotovProjectile") || 
-                           obj.m_uHashedName == FNV1A::HashConst("C_HEGrenadeProjectile") || 
-                           obj.m_uHashedName == FNV1A::HashConst("C_FlashbangProjectile"));
+        bool bIsMolotov = (obj.m_uHashedName == FNV1A::HashConst("C_MolotovProjectile"));
+        bool bIsHE = (obj.m_uHashedName == FNV1A::HashConst("C_HEGrenadeProjectile"));
+        bool bIsFlash = (obj.m_uHashedName == FNV1A::HashConst("C_FlashbangProjectile"));
+        bool bIsDecoy = (obj.m_uHashedName == FNV1A::HashConst("C_DecoyProjectile"));
 
-        if (bIsSmoke || bIsMolotov)
+        if (!bIsSmoke && !bIsMolotov && !bIsHE && !bIsFlash && !bIsDecoy)
+            continue;
+
+        static std::uint32_t uGameSceneNodeOffset = 0;
+        static std::uint32_t uOriginOffset = 0;
+        static bool bResolved = false;
+        
+        if (!bResolved)
         {
-            static std::uint32_t uGameSceneNodeOffset = 0;
-            static std::uint32_t uOriginOffset = 0;
-            static bool bSceneResolved = false;
-            
-            if (!bSceneResolved)
+            uGameSceneNodeOffset = SchemaSystem::m_mapSchemaOffsets[FNV1A::Hash("C_BaseEntity->m_pGameSceneNode")];
+            uOriginOffset = SchemaSystem::m_mapSchemaOffsets[FNV1A::Hash("CGameSceneNode->m_vecAbsOrigin")];
+            bResolved = true;
+        }
+
+        if (uGameSceneNodeOffset == 0 || uOriginOffset == 0) continue;
+
+        std::uintptr_t pEntityPtr = reinterpret_cast<std::uintptr_t>(obj.m_pEntity);
+        std::uintptr_t uSceneNode = g_Memory.ReadMemory<std::uintptr_t>(pEntityPtr + uGameSceneNodeOffset);
+        if (uSceneNode < 0x1000) continue;
+
+        Vector vecOrigin = g_Memory.ReadMemory<Vector>(uSceneNode + uOriginOffset);
+        if (!std::isfinite(vecOrigin.x) || !std::isfinite(vecOrigin.y) || !std::isfinite(vecOrigin.z))
+            continue;
+
+        // === Tracker: pozitsiyadan velocity hisoblash ===
+        GrenadeTrack_t* pTracker = FindOrCreateTracker(pEntityPtr);
+        pTracker->m_nTicksAlive = 0; // bu entity hali tirik
+
+        if (pTracker->m_bHasPrev)
+        {
+            Vector vecDelta;
+            vecDelta.x = vecOrigin.x - pTracker->m_vecPrevPos.x;
+            vecDelta.y = vecOrigin.y - pTracker->m_vecPrevPos.y;
+            vecDelta.z = vecOrigin.z - pTracker->m_vecPrevPos.z;
+
+            // ~60fps atrofida, har frame = ~0.016s
+            float flScale = 60.f; // frames -> units/sec
+            pTracker->m_vecVelocity.x = vecDelta.x * flScale;
+            pTracker->m_vecVelocity.y = vecDelta.y * flScale;
+            pTracker->m_vecVelocity.z = vecDelta.z * flScale;
+        }
+        pTracker->m_vecPrevPos = vecOrigin;
+        pTracker->m_bHasPrev = true;
+
+        // Rang va nom
+        const char* szName = "GRENADE";
+        Color colLine(255, 255, 255, 255);
+
+        if (bIsSmoke)       { szName = "SMOKE";   colLine = Color(100, 180, 255, 255); }
+        else if (bIsMolotov){ szName = "MOLOTOV";  colLine = Color(255, 100, 30, 255);  }
+        else if (bIsHE)     { szName = "HE";       colLine = Color(255, 180, 0, 255);   }
+        else if (bIsFlash)  { szName = "FLASH";    colLine = Color(255, 255, 100, 255);  }
+        else if (bIsDecoy)  { szName = "DECOY";    colLine = Color(150, 150, 150, 255);  }
+
+        Vector vecVelocity = pTracker->m_vecVelocity;
+        float flSpeed = std::sqrtf(vecVelocity.x * vecVelocity.x + vecVelocity.y * vecVelocity.y + vecVelocity.z * vecVelocity.z);
+
+        // ============================================================
+        // TRAEKTORIYA CHIZISH
+        // ============================================================
+        if (flSpeed > 30.f)
+        {
+            const float flGravity = 400.f;
+            const float flDt = 0.025f;
+            const int nMaxSteps = 100;
+
+            Vector vecPos = vecOrigin;
+            Vector vecVel = vecVelocity;
+            ImVec2 prevScreen;
+            bool bPrevValid = false;
+            Vector vecLandPos = vecOrigin;
+
+            for (int step = 0; step <= nMaxSteps; step++)
             {
-                uGameSceneNodeOffset = SchemaSystem::m_mapSchemaOffsets[FNV1A::Hash("C_BaseEntity->m_pGameSceneNode")];
-                uOriginOffset = SchemaSystem::m_mapSchemaOffsets[FNV1A::Hash("CGameSceneNode->m_vecAbsOrigin")];
-                bSceneResolved = true;
+                ImVec2 curScreen;
+                bool bCurValid = Draw::WorldToScreen(vecPos, curScreen);
+
+                if (bCurValid && bPrevValid)
+                {
+                    int alpha = 255 - (step * 2);
+                    if (alpha < 50) alpha = 50;
+                    Color colSeg(static_cast<int>(colLine.r()), static_cast<int>(colLine.g()), static_cast<int>(colLine.b()), alpha);
+                    Draw::AddLine(prevScreen, curScreen, colSeg, 2.5f);
+                }
+
+                prevScreen = curScreen;
+                bPrevValid = bCurValid;
+
+                vecVel.z -= flGravity * flDt;
+                vecPos.x += vecVel.x * flDt;
+                vecPos.y += vecVel.y * flDt;
+                vecPos.z += vecVel.z * flDt;
+                vecLandPos = vecPos;
+
+                if (vecPos.z < vecOrigin.z - 600.f)
+                    break;
             }
 
-            if (uGameSceneNodeOffset > 0 && uOriginOffset > 0)
+            // === TUSHISH JOYI ===
+            ImVec2 landScreen;
+            if (Draw::WorldToScreen(vecLandPos, landScreen))
             {
-                std::uintptr_t uSceneNode = g_Memory.ReadMemory<std::uintptr_t>(reinterpret_cast<std::uintptr_t>(obj.m_pEntity) + uGameSceneNodeOffset);
-                if (uSceneNode > 0x1000)
-                {
-                    Vector vecOrigin = g_Memory.ReadMemory<Vector>(uSceneNode + uOriginOffset);
-                    if (std::isfinite(vecOrigin.x) && std::isfinite(vecOrigin.y) && std::isfinite(vecOrigin.z))
-                    {
-                        ImVec2 screenPos;
-                        if (Draw::WorldToScreen(vecOrigin, screenPos))
-                        {
-                            std::string strLabel = "";
-                            Color colText = Color(255, 255, 255, 255);
-                            Color colCircle = colText;
+                Draw::AddCircle(landScreen, 18.f, colLine, 24, DRAW_CIRCLE_NONE, Color(0,0,0,0), 2.5f);
+                Draw::AddLine(ImVec2(landScreen.x - 8.f, landScreen.y - 8.f),
+                              ImVec2(landScreen.x + 8.f, landScreen.y + 8.f), colLine, 2.5f);
+                Draw::AddLine(ImVec2(landScreen.x + 8.f, landScreen.y - 8.f),
+                              ImVec2(landScreen.x - 8.f, landScreen.y + 8.f), colLine, 2.5f);
 
-                            if (bIsSmoke) {
-                                strLabel = "SMOKE";
-                                colCircle = Color(150, 150, 255, 200);
-                                colText = Color(200, 200, 255, 255);
-                            } else if (obj.m_uHashedName == FNV1A::HashConst("C_MolotovProjectile")) {
-                                strLabel = "MOLOTOV";
-                                colCircle = Color(255, 50, 50, 200);
-                                colText = Color(255, 100, 100, 255);
-                            } else if (obj.m_uHashedName == FNV1A::HashConst("C_HEGrenadeProjectile")) {
-                                strLabel = "HE GRENADE";
-                                colCircle = Color(255, 150, 0, 200);
-                                colText = Color(255, 200, 50, 255);
-                            } else if (obj.m_uHashedName == FNV1A::HashConst("C_FlashbangProjectile")) {
-                                strLabel = "FLASHBANG";
-                                colCircle = Color(255, 255, 150, 200);
-                                colText = Color(255, 255, 200, 255);
-                            }
+                char szLand[64];
+                snprintf(szLand, sizeof(szLand), "%s TUSHADI!", szName);
+                Draw::AddText(Fonts::ESP, Fonts::ESP->FontSize,
+                    ImVec2(landScreen.x + 22.f, landScreen.y - 6.f),
+                    szLand, colLine, DRAW_TEXT_DROPSHADOW, Color(0, 0, 0, 200));
+            }
+        }
 
-                            // 1. Draw a small, clean marker marking the exact center in 3D
-                            Draw::AddRing(vecOrigin, 15.0f, colCircle, 32, 0, 2.0f);
+        // ============================================================
+        // HOZIRGI JOYI
+        // ============================================================
+        ImVec2 screenPos;
+        if (Draw::WorldToScreen(vecOrigin, screenPos))
+        {
+            Draw::AddRing(vecOrigin, 15.0f, colLine, 32, 0, 2.0f);
 
-                            // Calculate distance
-                            float dist = 0.f;
-                            C_CSPlayerPawn* pLocalPawn = g_Globals.m_LocalPlayer.m_pPlayerPawn;
-                            if (pLocalPawn) {
-                                std::uintptr_t uLocalScene = g_Memory.ReadMemory<std::uintptr_t>(reinterpret_cast<std::uintptr_t>(pLocalPawn) + uGameSceneNodeOffset);
-                                if (uLocalScene > 0x1000) {
-                                    Vector vecLocalOrigin = g_Memory.ReadMemory<Vector>(uLocalScene + uOriginOffset);
-                                    dist = vecLocalOrigin.DistTo(vecOrigin) * 0.0254f; // units to meters
-                                }
-                            }
-
-                            // 2. Draw the Text Label above the center
-                            char szInfo[64];
-                            if (dist > 0.f)
-                                snprintf(szInfo, sizeof(szInfo), "%s [%.0fm]", strLabel.c_str(), dist);
-                            else
-                                snprintf(szInfo, sizeof(szInfo), "%s", strLabel.c_str());
-
-                            ImVec2 textSize = Fonts::ESP->CalcTextSizeA(Fonts::ESP->FontSize, FLT_MAX, 0.f, szInfo);
-                            Draw::AddText(Fonts::ESP, Fonts::ESP->FontSize, 
-                                          ImVec2(screenPos.x - textSize.x * 0.5f, screenPos.y - 15.f), 
-                                          szInfo, colText, DRAW_TEXT_DROPSHADOW, Color(0,0,0,200));
-                        }
-                    }
+            float dist = 0.f;
+            C_CSPlayerPawn* pLocalPawn = g_Globals.m_LocalPlayer.m_pPlayerPawn;
+            if (pLocalPawn) {
+                std::uintptr_t uLocalScene = g_Memory.ReadMemory<std::uintptr_t>(reinterpret_cast<std::uintptr_t>(pLocalPawn) + uGameSceneNodeOffset);
+                if (uLocalScene > 0x1000) {
+                    Vector vecLocalOrigin = g_Memory.ReadMemory<Vector>(uLocalScene + uOriginOffset);
+                    dist = vecLocalOrigin.DistTo(vecOrigin) * 0.0254f;
                 }
             }
+
+            char szInfo[64];
+            if (dist > 0.f)
+                snprintf(szInfo, sizeof(szInfo), "%s [%.0fm]", szName, dist);
+            else
+                snprintf(szInfo, sizeof(szInfo), "%s", szName);
+
+            ImVec2 textSize = Fonts::ESP->CalcTextSizeA(Fonts::ESP->FontSize, FLT_MAX, 0.f, szInfo);
+            Draw::AddText(Fonts::ESP, Fonts::ESP->FontSize,
+                          ImVec2(screenPos.x - textSize.x * 0.5f, screenPos.y - 15.f),
+                          szInfo, colLine, DRAW_TEXT_DROPSHADOW, Color(0,0,0,200));
         }
     }
 }
