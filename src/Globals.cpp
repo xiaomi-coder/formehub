@@ -14,17 +14,17 @@ bool CGlobals::Update()
 	static std::once_flag flag;
 	std::call_once(flag, []()
 	{
-		g_Globals.m_Offsets.m_uEntityList = g_Memory.GetModule(CLIENT_DLL).m_uBaseAddress + 38608368;
-		g_Globals.m_Offsets.m_uViewMatrix = g_Memory.GetModule(CLIENT_DLL).m_uBaseAddress + 36903728;
-		g_Globals.m_Offsets.m_uLocalPlayerController = g_Memory.GetModule(CLIENT_DLL).m_uBaseAddress + 36746704;
-		g_Globals.m_Offsets.m_uPlantedC4 = g_Memory.GetModule(CLIENT_DLL).m_uBaseAddress + 36936392;
+		g_Globals.m_Offsets.m_uEntityList = g_Memory.GetModule(CLIENT_DLL).m_uBaseAddress + 38604224;
+		g_Globals.m_Offsets.m_uViewMatrix = g_Memory.GetModule(CLIENT_DLL).m_uBaseAddress + 36899552;
+		g_Globals.m_Offsets.m_uLocalPlayerController = g_Memory.GetModule(CLIENT_DLL).m_uBaseAddress + 36742384;
+		g_Globals.m_Offsets.m_uPlantedC4 = g_Memory.GetModule(CLIENT_DLL).m_uBaseAddress + 36932200;
 		g_Globals.m_Offsets.m_uAutoAcceptArray = g_Memory.PatternScan(CLIENT_DLL, X("48 89 05 ? ? ? ? E8 ? ? ? ? 48 85 DB"), EPatternScanFlags::SCAN_RESOLVE_RIP, 0x3, 0x7);
 		
-		g_Globals.m_Offsets.m_uGlobalVars = g_Memory.GetModule(CLIENT_DLL).m_uBaseAddress + 33867224;
-		g_Globals.m_Offsets.m_uCSGOInput = g_Memory.GetModule(CLIENT_DLL).m_uBaseAddress + 36965888;
-		g_Globals.m_Offsets.m_uNetworkGameClient = g_Memory.GetModule(ENGINE2_DLL).m_uBaseAddress + 9478336;
-		g_Globals.m_Offsets.m_uEntitySystem = g_Memory.GetModule(CLIENT_DLL).m_uBaseAddress + 38608368;
-		g_Globals.m_Offsets.m_uSensitivity = g_Memory.GetModule(CLIENT_DLL).m_uBaseAddress + 36870344;
+		g_Globals.m_Offsets.m_uGlobalVars = g_Memory.GetModule(CLIENT_DLL).m_uBaseAddress + 33863128;
+		g_Globals.m_Offsets.m_uCSGOInput = g_Memory.GetModule(CLIENT_DLL).m_uBaseAddress + 36961280;
+		g_Globals.m_Offsets.m_uNetworkGameClient = g_Memory.GetModule(ENGINE2_DLL).m_uBaseAddress + 9474240;
+		g_Globals.m_Offsets.m_uEntitySystem = g_Memory.GetModule(CLIENT_DLL).m_uBaseAddress + 38604224;
+		g_Globals.m_Offsets.m_uSensitivity = g_Memory.GetModule(CLIENT_DLL).m_uBaseAddress + 36866136;
 	});
 
 	g_Globals.m_uEntityList = g_Globals.m_Offsets.m_uEntityList;

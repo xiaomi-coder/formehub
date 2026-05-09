@@ -108,7 +108,7 @@ bool SchemaSystem::Setup()
 
 	// CBasePlayerController
 	SetIfZero(FNV1A::HashConst("CBasePlayerController->m_hPawn"), 1724);
-	SetIfZero(FNV1A::HashConst("CBasePlayerController->m_iszPlayerName"), 1776);
+	SetIfZero(FNV1A::HashConst("CBasePlayerController->m_iszPlayerName"), 1780);
 
 	// C_BaseModelEntity
 	SetIfZero(FNV1A::HashConst("C_BaseModelEntity->m_vecViewOffset"), 3696);
@@ -128,18 +128,26 @@ bool SchemaSystem::Setup()
 
 	// C_BasePlayerPawn
 	SetIfZero(FNV1A::HashConst("C_BasePlayerPawn->m_pWeaponServices"), 4576);
+	SetIfZero(FNV1A::HashConst("C_BasePlayerPawn->m_pObserverServices"), 4600);
+	SetIfZero(FNV1A::HashConst("C_BasePlayerPawn->m_pViewModelServices"), 4648);
+	SetIfZero(FNV1A::HashConst("C_BasePlayerPawn->m_pMovementServices"), 4640);
 
 	// CPlayer_WeaponServices
 	SetIfZero(FNV1A::HashConst("CPlayer_WeaponServices->m_hActiveWeapon"), 96);
 	SetIfZero(FNV1A::HashConst("CPlayer_WeaponServices->m_hMyWeapons"), 72);
 
 	// CBasePlayerController - CRITICAL for ESP
-	SetIfZero(FNV1A::HashConst("CBasePlayerController->m_bIsLocalPlayerController"), 1920);
+	SetIfZero(FNV1A::HashConst("CBasePlayerController->m_bIsLocalPlayerController"), 1928);
 
 	// CCSPlayerController
-	SetIfZero(FNV1A::HashConst("CCSPlayerController->m_hPlayerPawn"), 2308);
-	SetIfZero(FNV1A::HashConst("CCSPlayerController->m_sSanitizedPlayerName"), 2136);
-	SetIfZero(FNV1A::HashConst("CCSPlayerController->m_iCompTeammateColor"), 2112);
+	SetIfZero(FNV1A::HashConst("CCSPlayerController->m_hPlayerPawn"), 2316);
+	SetIfZero(FNV1A::HashConst("CCSPlayerController->m_hObserverPawn"), 2320);
+	SetIfZero(FNV1A::HashConst("CCSPlayerController->m_sSanitizedPlayerName"), 2144);
+	SetIfZero(FNV1A::HashConst("CCSPlayerController->m_iCompTeammateColor"), 2120);
+
+	// CPlayer_ObserverServices - NOT in client.dll schema, MUST have fallback!
+	SetIfZero(FNV1A::HashConst("CPlayer_ObserverServices->m_hObserverTarget"), 68);
+	SetIfZero(FNV1A::HashConst("CPlayer_ObserverServices->m_iObserverMode"), 64);
 
 	// C_CSPlayerPawnBase / C_CSPlayerPawn
 	SetIfZero(FNV1A::HashConst("C_CSPlayerPawnBase->m_flFlashMaxAlpha"), 5116);

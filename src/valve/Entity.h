@@ -420,7 +420,7 @@ public:
     {
         // Try m_iszPlayerName directly (usually a fixed char array)
         static std::uint32_t uNameOffset = SchemaSystem::m_mapSchemaOffsets[FNV1A::HashConst("CBasePlayerController->m_iszPlayerName")];
-        if (uNameOffset == 0) uNameOffset = 1776; // Fallback
+        if (uNameOffset == 0) uNameOffset = 1780; // Fallback
 
         std::string sBuffer = g_Memory.ReadMemoryString(reinterpret_cast<DWORD64>(this) + uNameOffset);
         
@@ -428,7 +428,7 @@ public:
         if (sBuffer.empty())
         {
             static std::uint32_t uSanitizedOffset = SchemaSystem::m_mapSchemaOffsets[FNV1A::HashConst("CCSPlayerController->m_sSanitizedPlayerName")];
-            if (uSanitizedOffset == 0) uSanitizedOffset = 2136; // Fallback
+            if (uSanitizedOffset == 0) uSanitizedOffset = 2144; // Fallback
 
             DWORD64 SanitizedPlayerName = g_Memory.ReadMemory<DWORD64>((reinterpret_cast<DWORD64>(this) + uSanitizedOffset));
             if (SanitizedPlayerName)
