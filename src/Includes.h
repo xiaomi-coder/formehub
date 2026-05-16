@@ -37,6 +37,7 @@
 #include <Psapi.h>
 #include <sddl.h>
 #include <unordered_set>
+#include <random>
 
 // directx
 #include <d3d11.h>

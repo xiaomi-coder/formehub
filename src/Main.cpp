@@ -152,7 +152,7 @@ void RenderThread()
             if (CONFIG_GET(bool, g_Variables.m_Misc.m_bWatermark))
             {
                 char szWatermark[64];
-                snprintf(szWatermark, sizeof(szWatermark), "shifthub.uz | FPS: %03d", static_cast<int>(ImGui::GetIO().Framerate));
+                snprintf(szWatermark, sizeof(szWatermark), "shifthub.uz v2.0 | FPS: %03d", static_cast<int>(ImGui::GetIO().Framerate));
                 
                 ImVec2 textSize = Fonts::Default->CalcTextSizeA(Fonts::Default->FontSize, FLT_MAX, 0.0f, szWatermark);
                 ImVec2 padding(8.f, 4.f);
@@ -414,11 +414,44 @@ void TickThread()
             if (g_License.HasFeature(ETier::MID) && CONFIG_GET(bool, g_Variables.m_TriggerBot.m_bEnableTriggerbot))
                 Triggerbot::Run(vecEntities);
 
-            // ===== HIT SOUND =====
-            if (CONFIG_GET(bool, g_Variables.m_Misc.m_bHitSound))
+            // ===== HIT SOUND + KILL SOUND (V2.0) =====
+            if (CONFIG_GET(bool, g_Variables.m_Misc.m_bHitSound) || CONFIG_GET(bool, g_Variables.m_Misc.m_bKillSound))
             {
                 static std::map<std::uintptr_t, int> s_mapEnemyHP;
-                
+                static bool s_bSoundPathsChecked = false;
+                static std::string s_strHitSoundPath;
+                static std::string s_strKillSoundPath;
+                static std::string s_strDefaultSound = "C:\\Windows\\Media\\Windows Default.wav";
+
+                // V2.0: One-time check for custom sound files next to exe
+                if (!s_bSoundPathsChecked)
+                {
+                    s_bSoundPathsChecked = true;
+                    char szExePath[MAX_PATH];
+                    GetModuleFileNameA(NULL, szExePath, MAX_PATH);
+                    std::string strExeDir(szExePath);
+                    strExeDir = strExeDir.substr(0, strExeDir.find_last_of("\\/") + 1);
+
+                    std::string strHitFile  = strExeDir + "hit_sound.wav";
+                    std::string strKillFile = strExeDir + "kill_sound.wav";
+
+                    if (std::filesystem::exists(strHitFile))
+                        s_strHitSoundPath = strHitFile;
+                    else
+                        s_strHitSoundPath = s_strDefaultSound;
+
+                    if (std::filesystem::exists(strKillFile))
+                        s_strKillSoundPath = strKillFile;
+                    else
+                        s_strKillSoundPath = s_strDefaultSound;
+                }
+
+                // V2.0: Set volume based on config (0-100%)
+                float flVol = CONFIG_GET(float, g_Variables.m_Misc.m_flSoundVolume);
+                WORD wVolume = static_cast<WORD>((flVol / 100.0f) * 0xFFFF);
+                DWORD dwVolume = MAKELONG(wVolume, wVolume);
+                waveOutSetVolume(NULL, dwVolume);
+
                 for (EntityObject_t& object : vecEntities)
                 {
                     if (object.m_eType != EEntityType::ENTITY_PLAYER) continue;
@@ -445,7 +478,17 @@ void TickThread()
                     {
                         if (it->second > iHealth && iHealth > 0)
                         {
-                            PlaySoundA("C:\\Windows\\Media\\Windows Default.wav", NULL, SND_ASYNC | SND_FILENAME);
+                            // Hit sound — o'q tegdi
+                            if (CONFIG_GET(bool, g_Variables.m_Misc.m_bHitSound))
+                                PlaySoundA(s_strHitSoundPath.c_str(), NULL, SND_ASYNC | SND_FILENAME);
+                        }
+                        else if (it->second > 0 && iHealth <= 0)
+                        {
+                            // V2.0: Kill sound — dushman o'ldi!
+                            if (CONFIG_GET(bool, g_Variables.m_Misc.m_bKillSound))
+                                PlaySoundA(s_strKillSoundPath.c_str(), NULL, SND_ASYNC | SND_FILENAME);
+                            else if (CONFIG_GET(bool, g_Variables.m_Misc.m_bHitSound))
+                                PlaySoundA(s_strHitSoundPath.c_str(), NULL, SND_ASYNC | SND_FILENAME);
                         }
                     }
                     s_mapEnemyHP[uPawnAddress] = iHealth;

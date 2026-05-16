@@ -1,6 +1,103 @@
 #include "../Includes.h"
 
 // -----------------------------------------------------------------------
+// Knife skin gradient preview renderer (V2.0)
+// Draws a color gradient representing each knife skin pattern
+// -----------------------------------------------------------------------
+struct KnifeSkinColors_t
+{
+    int m_nPaintKit;
+    ImU32 m_colLeft;
+    ImU32 m_colMid;
+    ImU32 m_colRight;
+};
+
+static const KnifeSkinColors_t g_KnifeGradients[] = {
+    // Doppler series
+    { 415,  IM_COL32(20, 10, 60, 255),    IM_COL32(80, 20, 140, 255),   IM_COL32(30, 30, 180, 255)  },  // Doppler Phase 1
+    { 416,  IM_COL32(200, 50, 120, 255),   IM_COL32(120, 30, 180, 255),  IM_COL32(50, 20, 100, 255)  },  // Doppler Phase 2
+    { 417,  IM_COL32(10, 40, 30, 255),     IM_COL32(20, 80, 60, 255),    IM_COL32(40, 40, 120, 255)  },  // Doppler Phase 3
+    { 418,  IM_COL32(20, 60, 180, 255),    IM_COL32(10, 30, 100, 255),   IM_COL32(60, 20, 160, 255)  },  // Doppler Phase 4
+    { 419,  IM_COL32(180, 10, 10, 255),    IM_COL32(220, 30, 30, 255),   IM_COL32(140, 5, 5, 255)    },  // Doppler Ruby
+    { 420,  IM_COL32(10, 30, 200, 255),    IM_COL32(20, 60, 255, 255),   IM_COL32(5, 20, 150, 255)   },  // Doppler Sapphire
+    { 421,  IM_COL32(30, 10, 40, 255),     IM_COL32(60, 20, 80, 255),    IM_COL32(20, 15, 50, 255)   },  // Doppler Black Pearl
+    // Gamma Doppler
+    { 568,  IM_COL32(10, 80, 30, 255),     IM_COL32(20, 140, 50, 255),   IM_COL32(10, 60, 40, 255)   },  // Gamma Doppler P1
+    { 569,  IM_COL32(30, 180, 80, 255),    IM_COL32(60, 220, 100, 255),  IM_COL32(20, 140, 60, 255)  },  // Gamma Doppler P2
+    { 570,  IM_COL32(20, 60, 40, 255),     IM_COL32(40, 100, 70, 255),   IM_COL32(15, 50, 30, 255)   },  // Gamma Doppler P3
+    { 571,  IM_COL32(10, 120, 60, 255),    IM_COL32(30, 200, 80, 255),   IM_COL32(10, 100, 50, 255)  },  // Gamma Doppler P4
+    { 572,  IM_COL32(0, 200, 50, 255),     IM_COL32(0, 255, 80, 255),    IM_COL32(0, 180, 40, 255)   },  // Gamma Doppler Emerald
+    { 1119, IM_COL32(10, 80, 30, 255),     IM_COL32(20, 140, 50, 255),   IM_COL32(10, 60, 40, 255)   },  // Gamma Doppler P1 (alt)
+    // Classic skins
+    { 38,   IM_COL32(255, 220, 50, 255),   IM_COL32(255, 120, 180, 255), IM_COL32(120, 50, 200, 255) },  // Fade
+    { 59,   IM_COL32(180, 180, 200, 255),  IM_COL32(220, 40, 40, 255),   IM_COL32(200, 200, 220, 255)},  // Slaughter
+    { 44,   IM_COL32(60, 80, 200, 255),    IM_COL32(200, 180, 50, 255),  IM_COL32(80, 100, 180, 255) },  // Case Hardened
+    { 12,   IM_COL32(140, 10, 10, 255),    IM_COL32(180, 20, 20, 255),   IM_COL32(100, 5, 5, 255)    },  // Crimson Web
+    { 409,  IM_COL32(220, 180, 30, 255),   IM_COL32(255, 210, 50, 255),  IM_COL32(200, 160, 20, 255) },  // Tiger Tooth
+    { 413,  IM_COL32(200, 30, 30, 255),    IM_COL32(255, 220, 50, 255),  IM_COL32(30, 80, 200, 255)  },  // Marble Fade
+    { 558,  IM_COL32(120, 80, 40, 255),    IM_COL32(180, 140, 60, 255),  IM_COL32(100, 70, 30, 255)  },  // Lore
+    { 98,   IM_COL32(80, 20, 120, 255),    IM_COL32(120, 40, 180, 255),  IM_COL32(60, 15, 100, 255)  },  // Ultraviolet
+    { 410,  IM_COL32(160, 160, 170, 255),  IM_COL32(200, 200, 210, 255), IM_COL32(140, 140, 150, 255)},  // Damascus Steel
+    { 414,  IM_COL32(140, 80, 40, 255),    IM_COL32(180, 100, 50, 255),  IM_COL32(100, 60, 30, 255)  },  // Rust Coat
+    { 43,   IM_COL32(20, 20, 30, 255),     IM_COL32(40, 40, 60, 255),    IM_COL32(15, 15, 25, 255)   },  // Night
+    { 42,   IM_COL32(80, 100, 140, 255),   IM_COL32(120, 140, 180, 255), IM_COL32(60, 80, 120, 255)  },  // Blue Steel
+    { 40,   IM_COL32(80, 80, 80, 255),     IM_COL32(120, 120, 120, 255), IM_COL32(60, 60, 60, 255)   },  // Urban Masked
+    { 175,  IM_COL32(140, 100, 50, 255),   IM_COL32(180, 130, 60, 255),  IM_COL32(120, 80, 40, 255)  },  // Scorched
+    { 5,    IM_COL32(40, 80, 30, 255),     IM_COL32(80, 120, 50, 255),   IM_COL32(30, 60, 20, 255)   },  // Forest DDPAT
+    { 77,   IM_COL32(50, 80, 50, 255),     IM_COL32(80, 120, 70, 255),   IM_COL32(40, 60, 40, 255)   },  // Boreal Forest
+    { 135,  IM_COL32(180, 170, 150, 255),  IM_COL32(200, 190, 170, 255), IM_COL32(160, 150, 130, 255)},  // Vanilla
+    { 411,  IM_COL32(200, 40, 20, 255),    IM_COL32(180, 30, 15, 255),   IM_COL32(220, 50, 25, 255)  },  // Autotronic
+};
+static const int g_nKnifeGradientCount = sizeof(g_KnifeGradients) / sizeof(g_KnifeGradients[0]);
+
+// Draw a 3-color horizontal gradient rectangle for knife skin preview
+static void DrawKnifeSkinPreview(ImDrawList* pDrawList, ImVec2 pos, ImVec2 size, int nPaintKit)
+{
+    if (nPaintKit == 0) return;
+
+    // Find gradient for this paint kit
+    ImU32 colL = IM_COL32(80, 80, 80, 255);
+    ImU32 colM = IM_COL32(120, 120, 120, 255);
+    ImU32 colR = IM_COL32(80, 80, 80, 255);
+
+    for (int i = 0; i < g_nKnifeGradientCount; i++)
+    {
+        if (g_KnifeGradients[i].m_nPaintKit == nPaintKit)
+        {
+            colL = g_KnifeGradients[i].m_colLeft;
+            colM = g_KnifeGradients[i].m_colMid;
+            colR = g_KnifeGradients[i].m_colRight;
+            break;
+        }
+    }
+
+    // Draw 2-part gradient: left->mid, mid->right
+    float halfW = size.x * 0.5f;
+    ImVec2 midPos = ImVec2(pos.x + halfW, pos.y);
+
+    pDrawList->AddRectFilledMultiColor(
+        pos, ImVec2(midPos.x, pos.y + size.y),
+        colL, colM, colM, colL
+    );
+    pDrawList->AddRectFilledMultiColor(
+        midPos, ImVec2(pos.x + size.x, pos.y + size.y),
+        colM, colR, colR, colM
+    );
+
+    // Border
+    pDrawList->AddRect(pos, ImVec2(pos.x + size.x, pos.y + size.y), IM_COL32(200, 200, 200, 100), 3.f);
+}
+
+// Draw a small inline gradient swatch (for dropdown items)
+static void DrawKnifeSwatchInline(ImDrawList* pDrawList, ImVec2 pos, float height, int nPaintKit)
+{
+    float swatchW = 40.f;
+    float swatchH = height - 4.f;
+    ImVec2 swatchPos = ImVec2(pos.x, pos.y + 2.f);
+    DrawKnifeSkinPreview(pDrawList, swatchPos, ImVec2(swatchW, swatchH), nPaintKit);
+}
+
+// -----------------------------------------------------------------------
 // Hacker / Cyber color palette
 // -----------------------------------------------------------------------
 static inline ImVec4 C(int r, int g, int b, int a = 255)
@@ -288,7 +385,7 @@ void Gui::Render()
     // ================================================================
     char szTitle[128];
     snprintf(szTitle, sizeof(szTitle),
-        " SHIFTHUB.UZ  |  v1.0  |  [ %s ]  |  %s",
+        " SHIFTHUB.UZ  |  v2.0  |  [ %s ]  |  %s",
         g_License.GetTierName(),
         g_License.m_strUser.c_str());
 
@@ -500,6 +597,24 @@ void Gui::Render()
 
                     ImGui::Checkbox(X("Jamoani e'tiborsiz##trig"), &CONFIG_GET(bool, g_Variables.m_TriggerBot.m_bIgnoreTeammates));
                     ImGui::Checkbox(X("Faqat ko'ringanlar (devordan emas)"), &CONFIG_GET(bool, g_Variables.m_TriggerBot.m_bOnlyVisible));
+
+                    ImGui::Spacing();
+                    SectionTitle("Anti-Ban Sozlamalari (V2.0)");
+
+                    ImGui::SetNextItemWidth(200.f);
+                    ImGui::SliderFloat(X("Hitchance##trig"), &CONFIG_GET(float, g_Variables.m_TriggerBot.m_flHitchance), 0.f, 100.f, "%.0f%%");
+                    ImGui::PushStyleColor(ImGuiCol_Text, C(100, 100, 120));
+                    ImGui::Text("  80%% = har 5 ta dushmanfan 4 tasiga otadi (20%% miss)");
+                    ImGui::PopStyleColor();
+
+                    ImGui::Spacing();
+                    ImGui::SetNextItemWidth(120.f);
+                    ImGui::SliderInt(X("Min Burst##trig"), &CONFIG_GET(int, g_Variables.m_TriggerBot.m_iMinBurst), 1, 5, "%d o'q");
+                    ImGui::SetNextItemWidth(120.f);
+                    ImGui::SliderInt(X("Max Burst##trig"), &CONFIG_GET(int, g_Variables.m_TriggerBot.m_iMaxBurst), 1, 5, "%d o'q");
+                    ImGui::PushStyleColor(ImGuiCol_Text, C(100, 100, 120));
+                    ImGui::Text("  Bir marta bosishda 1-3 ta o'q otadi (odam-o'xshash)");
+                    ImGui::PopStyleColor();
                 }
                 else
                 {
@@ -534,6 +649,72 @@ void Gui::Render()
 
                     ImGui::Checkbox(X("Jamoani e'tiborsiz##aim"), &CONFIG_GET(bool, g_Variables.m_AimBot.m_bIgnoreTeammates));
                     ImGui::Checkbox(X("FOV doirasini chizish"),       &CONFIG_GET(bool, g_Variables.m_AimBot.m_bDrawFOV));
+
+                    ImGui::Spacing();
+                    SectionTitle("Aimbot Rejimi (V2.0)");
+
+                    static const char* aimModes[] = { "Klassik (Eski — Tez)", "Xavfsiz (V2.0 — Anti-Ban)" };
+                    ImGui::SetNextItemWidth(260.f);
+                    ImGui::Combo(X("Rejim##aimmode"), &CONFIG_GET(int, g_Variables.m_AimBot.m_iAimMode), aimModes, 2);
+
+                    int iCurrentMode = CONFIG_GET(int, g_Variables.m_AimBot.m_iAimMode);
+
+                    if (iCurrentMode == 0)
+                    {
+                        // Klassik rejim — info ko'rsatish
+                        ImGui::Spacing();
+                        ImGui::PushStyleColor(ImGuiCol_Text, C(255, 200, 50));
+                        ImGui::Text("  [!] KLASSIK REJIM — Anti-ban himoyasi O'CHIRILGAN");
+                        ImGui::PopStyleColor();
+                        ImGui::PushStyleColor(ImGuiCol_Text, C(100, 100, 120));
+                        ImGui::Text("  Eski V1.0 aim — tez, lekin Overwatch'da ko'rinishi mumkin.");
+                        ImGui::Text("  Delay yo'q, jitter yo'q, visibility check yo'q.");
+                        ImGui::PopStyleColor();
+                    }
+                    else
+                    {
+                        // Xavfsiz rejim — barcha sozlamalar
+                        ImGui::Spacing();
+                        ImGui::PushStyleColor(ImGuiCol_Text, C(0, 220, 70));
+                        ImGui::Text("  [+] XAVFSIZ REJIM — Anti-ban himoyasi YOQILGAN");
+                        ImGui::PopStyleColor();
+
+                        ImGui::Spacing();
+                        ImGui::Checkbox(X("Devordan aim QILMASIN (Visibility Check)"), &CONFIG_GET(bool, g_Variables.m_AimBot.m_bVisibilityCheck));
+                        ImGui::PushStyleColor(ImGuiCol_Text, C(100, 100, 120));
+                        ImGui::Text("  Faqat ko'rinadigan dushmanlarga aim qiladi");
+                        ImGui::PopStyleColor();
+
+                        ImGui::Spacing();
+                        ImGui::SetNextItemWidth(200.f);
+                        ImGui::SliderFloat(X("Min reaktsiya (ms)##aim"), &CONFIG_GET(float, g_Variables.m_AimBot.m_flReactionTimeMin), 0.f, 500.f, "%.0f ms");
+                        ImGui::SetNextItemWidth(200.f);
+                        ImGui::SliderFloat(X("Max reaktsiya (ms)##aim"), &CONFIG_GET(float, g_Variables.m_AimBot.m_flReactionTimeMax), 0.f, 500.f, "%.0f ms");
+                        ImGui::PushStyleColor(ImGuiCol_Text, C(100, 100, 120));
+                        ImGui::Text("  Yangi targetga aim olishdan oldin kutish (odam reaktsiyasi)");
+                        ImGui::PopStyleColor();
+
+                        ImGui::Spacing();
+                        ImGui::SetNextItemWidth(200.f);
+                        ImGui::SliderFloat(X("Maks aim vaqt (ms)##aim"), &CONFIG_GET(float, g_Variables.m_AimBot.m_flMaxAimTime), 500.f, 10000.f, "%.0f ms");
+                        ImGui::PushStyleColor(ImGuiCol_Text, C(100, 100, 120));
+                        ImGui::Text("  Bir targetga uzoq aim qilsa — to'xtaydi");
+                        ImGui::PopStyleColor();
+
+                        ImGui::Spacing();
+                        ImGui::SetNextItemWidth(200.f);
+                        ImGui::SliderFloat(X("Aim xatolik (px)##aim"), &CONFIG_GET(float, g_Variables.m_AimBot.m_flAimJitter), 0.f, 10.f, "%.1f px");
+                        ImGui::PushStyleColor(ImGuiCol_Text, C(100, 100, 120));
+                        ImGui::Text("  Tasodifiy xatolik — 100%% aniq emas (odam o'xshash)");
+                        ImGui::PopStyleColor();
+
+                        ImGui::Spacing();
+                        ImGui::SetNextItemWidth(200.f);
+                        ImGui::SliderFloat(X("Kill kutish (ms)##aim"), &CONFIG_GET(float, g_Variables.m_AimBot.m_flKillDelay), 0.f, 1500.f, "%.0f ms");
+                        ImGui::PushStyleColor(ImGuiCol_Text, C(100, 100, 120));
+                        ImGui::Text("  Dushman o'lganda keyingisiga o'tishdan oldin pauza");
+                        ImGui::PopStyleColor();
+                    }
 
                     ImGui::Spacing();
                     SectionTitle("Recoil Control (RCS) - Otkacha");
@@ -707,6 +888,159 @@ void Gui::Render()
                     ImGui::Separator();
                     ImGui::Spacing();
 
+                    // ============================================================
+                    // KNIFE SKINS — Maxsus bo'lim (V2.0)
+                    // ============================================================
+                    ImGui::PushStyleColor(ImGuiCol_Text, C(255, 200, 50));
+                    ImGui::Text("  %s  PICHOQ SKINLARI", "\xF0\x9F\x94\xAA");
+                    ImGui::PopStyleColor();
+                    ImGui::PushStyleColor(ImGuiCol_Text, C(100, 100, 120));
+                    ImGui::Text("  Pichoqingiz uchun skin tanlang (Doppler, Fade, Tiger Tooth...)");
+                    ImGui::PopStyleColor();
+                    ImGui::Spacing();
+
+                    {
+                        WeaponSkinConfig_t& knifeCfg = SkinChanger::GetWeaponConfig(WEAPON_KNIFE_CT);
+
+                        // Knife skin dropdown
+                        const char* szCurrentKnifeSkin = "Default (o'zgarishsiz)";
+                        for (int j = 0; j < SkinChanger::g_nKnifeSkinCount; j++)
+                        {
+                            if (SkinChanger::g_KnifeSkins[j].m_nPaintKit == knifeCfg.m_nPaintKit)
+                            {
+                                szCurrentKnifeSkin = SkinChanger::g_KnifeSkins[j].m_szName;
+                                break;
+                            }
+                        }
+
+                        // === KATTA PREVIEW — tanlangan skin gradienti ===
+                        if (knifeCfg.m_nPaintKit != 0)
+                        {
+                            ImVec2 previewPos = ImGui::GetCursorScreenPos();
+                            ImVec2 previewSize = ImVec2(300.f, 50.f);
+                            ImDrawList* pDL = ImGui::GetWindowDrawList();
+
+                            // Background
+                            pDL->AddRectFilled(previewPos, ImVec2(previewPos.x + previewSize.x, previewPos.y + previewSize.y), IM_COL32(15, 15, 20, 255), 4.f);
+
+                            // Gradient
+                            ImVec2 gradPos = ImVec2(previewPos.x + 4.f, previewPos.y + 4.f);
+                            ImVec2 gradSize = ImVec2(previewSize.x - 8.f, previewSize.y - 8.f);
+                            DrawKnifeSkinPreview(pDL, gradPos, gradSize, knifeCfg.m_nPaintKit);
+
+                            // Skin name overlay
+                            char previewText[64];
+                            snprintf(previewText, sizeof(previewText), "%s", szCurrentKnifeSkin);
+                            ImVec2 textSize = ImGui::CalcTextSize(previewText);
+                            ImVec2 textPos = ImVec2(
+                                previewPos.x + (previewSize.x - textSize.x) * 0.5f,
+                                previewPos.y + (previewSize.y - textSize.y) * 0.5f
+                            );
+                            // Shadow
+                            pDL->AddText(ImVec2(textPos.x + 1.f, textPos.y + 1.f), IM_COL32(0, 0, 0, 200), previewText);
+                            // Text
+                            pDL->AddText(textPos, IM_COL32(255, 255, 255, 255), previewText);
+
+                            ImGui::Dummy(previewSize);
+                            ImGui::Spacing();
+                        }
+
+                        // === DROPDOWN — har bir skin yonida swatch ===
+                        ImGui::SetNextItemWidth(300.f);
+                        if (ImGui::BeginCombo(X("##KnifeSkinCombo"), szCurrentKnifeSkin))
+                        {
+                            for (int j = 0; j < SkinChanger::g_nKnifeSkinCount; j++)
+                            {
+                                bool bSelected = (SkinChanger::g_KnifeSkins[j].m_nPaintKit == knifeCfg.m_nPaintKit);
+                                int nPK = SkinChanger::g_KnifeSkins[j].m_nPaintKit;
+
+                                // Swatch + text label
+                                if (nPK != 0)
+                                {
+                                    // Draw color swatch before text
+                                    ImVec2 itemPos = ImGui::GetCursorScreenPos();
+                                    float itemH = ImGui::GetTextLineHeight();
+                                    DrawKnifeSwatchInline(ImGui::GetWindowDrawList(), itemPos, itemH, nPK);
+                                }
+
+                                // Label with indent for swatch space
+                                char knifeLabel[96];
+                                if (nPK == 0)
+                                    snprintf(knifeLabel, sizeof(knifeLabel), "      Default (off)");
+                                else
+                                    snprintf(knifeLabel, sizeof(knifeLabel), "           %s", SkinChanger::g_KnifeSkins[j].m_szName);
+
+                                if (ImGui::Selectable(knifeLabel, bSelected))
+                                    knifeCfg.m_nPaintKit = nPK;
+
+                                if (bSelected)
+                                    ImGui::SetItemDefaultFocus();
+                            }
+                            ImGui::EndCombo();
+                        }
+
+                        // Knife wear
+                        ImGui::SetNextItemWidth(200.f);
+                        ImGui::SliderFloat(X("Sifat##knifewear"), &knifeCfg.m_flWear, 0.0001f, 1.0f, "%.4f");
+                        ImGui::SameLine();
+                        ImGui::PushStyleColor(ImGuiCol_Text, C(100, 100, 120));
+                        if (knifeCfg.m_flWear < 0.07f)       ImGui::Text("(Factory New)");
+                        else if (knifeCfg.m_flWear < 0.15f)  ImGui::Text("(Minimal Wear)");
+                        else if (knifeCfg.m_flWear < 0.38f)  ImGui::Text("(Field-Tested)");
+                        else if (knifeCfg.m_flWear < 0.45f)  ImGui::Text("(Well-Worn)");
+                        else                                  ImGui::Text("(Battle-Scarred)");
+                        ImGui::PopStyleColor();
+
+                        // Knife seed
+                        ImGui::SetNextItemWidth(120.f);
+                        ImGui::InputInt(X("Pattern##knifeseed"), &knifeCfg.m_nSeed);
+                        if (knifeCfg.m_nSeed < 0) knifeCfg.m_nSeed = 0;
+                        if (knifeCfg.m_nSeed > 1000) knifeCfg.m_nSeed = 1000;
+
+                        // Knife StatTrak
+                        bool bKnifeST = (knifeCfg.m_nStatTrak >= 0);
+                        ImGui::SameLine(260.f);
+                        if (ImGui::Checkbox(X("StatTrak##knifest"), &bKnifeST))
+                            knifeCfg.m_nStatTrak = bKnifeST ? 0 : -1;
+                        if (knifeCfg.m_nStatTrak >= 0)
+                        {
+                            ImGui::SameLine();
+                            ImGui::SetNextItemWidth(80.f);
+                            ImGui::InputInt(X("##KnifeSTVal"), &knifeCfg.m_nStatTrak);
+                            if (knifeCfg.m_nStatTrak < 0) knifeCfg.m_nStatTrak = 0;
+                        }
+
+                        // Reset knife
+                        ImGui::PushStyleColor(ImGuiCol_Button,        C(120, 30, 30));
+                        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, C(180, 50, 50));
+                        ImGui::PushStyleColor(ImGuiCol_ButtonActive,  C(220, 60, 60));
+                        if (ImGui::Button(X("Pichoq Reset##knifereset"), ImVec2(130.f, 0.f)))
+                        {
+                            knifeCfg.m_nPaintKit = 0;
+                            knifeCfg.m_flWear    = 0.0001f;
+                            knifeCfg.m_nSeed     = 0;
+                            knifeCfg.m_nStatTrak = -1;
+                        }
+                        ImGui::PopStyleColor(3);
+
+                        if (knifeCfg.m_nPaintKit != 0)
+                        {
+                            ImGui::SameLine();
+                            ImGui::PushStyleColor(ImGuiCol_Text, C(0, 220, 70));
+                            ImGui::Text("  Aktiv: %s", szCurrentKnifeSkin);
+                            ImGui::PopStyleColor();
+                        }
+                    }
+
+                    ImGui::Spacing();
+                    ImGui::Separator();
+                    ImGui::Spacing();
+
+                    // ============================================================
+                    // QUROL SKINLARI
+                    // ============================================================
+                    SectionTitle("Qurol skinlari");
+
                     static int nSelectedWeapon = 0;
 
                     ImGui::BeginColumns(X("##SkinCols"), 2, ImGuiColumnsFlags_NoResize);
@@ -718,11 +1052,16 @@ void Gui::Render()
                         ImGui::PopStyleColor();
                         ImGui::Spacing();
 
-                        if (ImGui::BeginListBox(X("##WeaponList"), ImVec2(-1, 340.f)))
+                        if (ImGui::BeginListBox(X("##WeaponList"), ImVec2(-1, 280.f)))
                         {
+                            // Knife ni qurollar listidan chiqaramiz (yuqorida alohida bo'limi bor)
                             for (int i = 0; i < SkinChanger::g_nWeaponCategoryCount; i++)
                             {
                                 WeaponCategory_t& cat = SkinChanger::g_vecWeaponCategories[i];
+
+                                // Knife'ni skip qilish — yuqorida alohida bo'limda
+                                if (cat.m_nDefIndex == WEAPON_KNIFE_CT) continue;
+
                                 WeaponSkinConfig_t& cfg = SkinChanger::GetWeaponConfig(cat.m_nDefIndex);
 
                                 // Mark weapons that have a skin selected
@@ -963,6 +1302,28 @@ void Gui::Render()
                 ImGui::PushStyleColor(ImGuiCol_Text, C(100, 100, 120));
                 ImGui::Text("  Dushmanga o'q tekkanda 'Tink' ovozini chiqarish");
                 ImGui::PopStyleColor();
+
+                ImGui::Checkbox(X("Kill Sound (O'ldirish ovozi)"), &CONFIG_GET(bool, g_Variables.m_Misc.m_bKillSound));
+                ImGui::PushStyleColor(ImGuiCol_Text, C(100, 100, 120));
+                ImGui::Text("  Dushman o'lganda alohida ovoz (kill_sound.wav)");
+                ImGui::PopStyleColor();
+
+                ImGui::SetNextItemWidth(200.f);
+                ImGui::SliderFloat(X("Ovoz balandligi##sndvol"), &CONFIG_GET(float, g_Variables.m_Misc.m_flSoundVolume), 0.f, 100.f, "%.0f%%");
+
+                ImGui::PushStyleColor(ImGuiCol_Text, C(100, 100, 120));
+                ImGui::Text("  hit_sound.wav va kill_sound.wav fayllarini exe yoniga qo'ying");
+                ImGui::PopStyleColor();
+
+                // V2.0: Sound test buttons
+                ImGui::PushStyleColor(ImGuiCol_Button,        C(20, 80, 40));
+                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, C(30, 120, 60));
+                if (ImGui::Button(X("Test Hit##sndhit"), ImVec2(80.f, 0.f)))
+                    PlaySoundA("C:\\Windows\\Media\\Windows Default.wav", NULL, SND_ASYNC | SND_FILENAME);
+                ImGui::SameLine();
+                if (ImGui::Button(X("Test Kill##sndkill"), ImVec2(80.f, 0.f)))
+                    PlaySoundA("C:\\Windows\\Media\\Windows Default.wav", NULL, SND_ASYNC | SND_FILENAME);
+                ImGui::PopStyleColor(2);
 
                 ImGui::Checkbox(X("Tomosha qiluvchilar"), &CONFIG_GET(bool, g_Variables.m_SpectatorList.m_bEnableSpectatorList));
                 ImGui::PushStyleColor(ImGuiCol_Text, C(100, 100, 120));

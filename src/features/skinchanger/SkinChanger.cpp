@@ -503,16 +503,46 @@ void SkinChanger::Run()
     C_NetworkUtlVectorBaseSimple hWeapons = pWeaponServices->m_hMyWeapons();
     if (hWeapons.m_nSize <= 0 || hWeapons.m_nSize > 16 || hWeapons.m_pData < 0x1000) return;
 
-    // Hardcoded offsets from client_dll.json — ALWAYS correct for current CS2 version
-    static const std::uintptr_t uAttrMgr       = 4480;  // C_EconEntity->m_AttributeManager
-    static const std::uintptr_t uItem           = 80;    // C_AttributeContainer->m_Item
-    static const std::uintptr_t uItemIDHigh     = 464;   // C_EconItemView->m_iItemIDHigh
-    static const std::uintptr_t uItemDefIdx     = 442;   // C_EconItemView->m_iItemDefinitionIndex
-    static const std::uintptr_t uFallbackPaint  = 5720;  // C_EconEntity->m_nFallbackPaintKit
-    static const std::uintptr_t uFallbackSeed   = 5724;  // C_EconEntity->m_nFallbackSeed
-    static const std::uintptr_t uFallbackWear   = 5728;  // C_EconEntity->m_flFallbackWear
-    static const std::uintptr_t uFallbackStatTrak = 5732; // C_EconEntity->m_nFallbackStatTrak
-    static const std::uintptr_t uAccountID      = 472;   // C_EconItemView->m_iAccountID
+    // V2.0: SchemaSystem dan DINAMIK offset olish — CS2 update bo'lsa ham ishlaydi!
+    static std::uintptr_t uAttrMgr       = 0;
+    static std::uintptr_t uItem           = 0;
+    static std::uintptr_t uItemIDHigh     = 0;
+    static std::uintptr_t uItemIDLow      = 0;
+    static std::uintptr_t uItemDefIdx     = 0;
+    static std::uintptr_t uFallbackPaint  = 0;
+    static std::uintptr_t uFallbackSeed   = 0;
+    static std::uintptr_t uFallbackWear   = 0;
+    static std::uintptr_t uFallbackStatTrak = 0;
+    static std::uintptr_t uAccountID      = 0;
+    static bool bOffsetsResolved = false;
+
+    if (!bOffsetsResolved)
+    {
+        uAttrMgr           = ResolveSchemaOffset({"C_EconEntity->m_AttributeManager"});
+        uItem              = ResolveSchemaOffset({"C_AttributeContainer->m_Item"});
+        uItemIDHigh        = ResolveSchemaOffset({"C_EconItemView->m_iItemIDHigh"});
+        uItemIDLow         = ResolveSchemaOffset({"C_EconItemView->m_iItemIDLow"});
+        uItemDefIdx        = ResolveSchemaOffset({"C_EconItemView->m_iItemDefinitionIndex"});
+        uFallbackPaint     = ResolveSchemaOffset({"C_EconEntity->m_nFallbackPaintKit"});
+        uFallbackSeed      = ResolveSchemaOffset({"C_EconEntity->m_nFallbackSeed"});
+        uFallbackWear      = ResolveSchemaOffset({"C_EconEntity->m_flFallbackWear"});
+        uFallbackStatTrak  = ResolveSchemaOffset({"C_EconEntity->m_nFallbackStatTrak"});
+        uAccountID         = ResolveSchemaOffset({"C_EconItemView->m_iAccountID"});
+
+        // Agar hech biri topilmagan bo'lsa — ishga tushirmaymiz
+        if (uAttrMgr == 0 || uItem == 0 || uFallbackPaint == 0 || uItemDefIdx == 0)
+        {
+            std::cout << X("  [SKIN] Schema offsets topilmadi! SkinChanger ishlamaydi.") << std::endl;
+            return;
+        }
+
+        bOffsetsResolved = true;
+        std::cout << X("  [SKIN] Offsetlar muvaffaqiyatli yuklandi:") << std::endl;
+        std::cout << X("    AttrMgr=") << uAttrMgr
+                  << X(" Item=") << uItem
+                  << X(" FallbackPaint=") << uFallbackPaint
+                  << X(" ItemDefIdx=") << uItemDefIdx << std::endl;
+    }
 
     for (int i = 0; i < hWeapons.m_nSize; i++)
     {
@@ -523,38 +553,10 @@ void SkinChanger::Run()
         if (!pWeapon || reinterpret_cast<std::uintptr_t>(pWeapon) < 0x1000) continue;
         std::uintptr_t uWeaponAddr = reinterpret_cast<std::uintptr_t>(pWeapon);
 
-        // Read item definition index (always through AttributeManager->Item path)
+        // Read item definition index
         std::uint16_t nDefIndex = 0;
         if (uItemDefIdx > 0)
             nDefIndex = g_Memory.ReadMemory<std::uint16_t>(uWeaponAddr + uAttrMgr + uItem + uItemDefIdx);
-
-        // --- DEBUG LOGGING ---
-        static bool bDumpedOnce = false;
-        if (!bDumpedOnce && pWeaponServices && pWeaponServices->m_hActiveWeapon().Get() == pWeapon)
-        {
-            std::ofstream debugFile("skinchanger_debug.txt");
-            if (debugFile.is_open())
-            {
-                debugFile << "Active Weapon Diagnostic:\n";
-                debugFile << "uWeaponAddr: 0x" << std::hex << uWeaponAddr << "\n";
-                debugFile << "uAttrMgr: 0x" << uAttrMgr << "\n";
-                debugFile << "uItem: 0x" << uItem << "\n";
-                debugFile << "uItemDefIdx: 0x" << uItemDefIdx << "\n";
-                debugFile << "nDefIndex: " << std::dec << nDefIndex << "\n";
-                debugFile << "uItemIDHigh: 0x" << std::hex << uItemIDHigh << "\n";
-                debugFile << "uFallbackPaint: 0x" << uFallbackPaint << "\n";
-                debugFile << "uFallbackSeed: 0x" << uFallbackSeed << "\n";
-                debugFile << "uFallbackWear: 0x" << uFallbackWear << "\n";
-                
-                int readItemHigh = g_Memory.ReadMemory<int>(uWeaponAddr + uAttrMgr + uItem + uItemIDHigh);
-                int readPaintKit = g_Memory.ReadMemory<int>(uWeaponAddr + uFallbackPaint);
-                debugFile << "Current ItemIDHigh Value: " << std::dec << readItemHigh << "\n";
-                debugFile << "Current FallbackPaintKit Value: " << readPaintKit << "\n";
-                debugFile.close();
-                bDumpedOnce = true;
-            }
-        }
-        // --- END DEBUG LOGGING ---
 
         if (nDefIndex == 0) continue;
 
@@ -573,38 +575,22 @@ void SkinChanger::Run()
         int iCurrentPaintKit = g_Memory.ReadMemory<int>(uWeaponAddr + uFallbackPaint);
         int iCurrentItemIDHigh = g_Memory.ReadMemory<int>(uEconBase + uItemIDHigh);
 
-        // Only write if not yet applied (ItemIDHigh != -1 or PaintKit wrong)
+        // Only write if not yet applied
         if (iCurrentItemIDHigh != -1 || iCurrentPaintKit != cfg.m_nPaintKit)
         {
-            // 1. Force fallback mode
+            // 1. Force fallback mode — server skin emas, bizniki ko'rinsin
             g_Memory.WriteMemory<int>(uEconBase + uItemIDHigh, -1);
-            g_Memory.WriteMemory<int>(uEconBase + 468, -1);  // m_iItemIDLow
-            g_Memory.WriteMemory<int>(uEconBase + uAccountID, 0);
+            if (uItemIDLow > 0)
+                g_Memory.WriteMemory<int>(uEconBase + uItemIDLow, -1);
+            if (uAccountID > 0)
+                g_Memory.WriteMemory<int>(uEconBase + uAccountID, 0);
 
             // 2. Write paint kit and other fallback values
             g_Memory.WriteMemory<int>(uWeaponAddr + uFallbackPaint, cfg.m_nPaintKit);
             g_Memory.WriteMemory<float>(uWeaponAddr + uFallbackWear, cfg.m_flWear);
             g_Memory.WriteMemory<int>(uWeaponAddr + uFallbackSeed, cfg.m_nSeed);
-            if (cfg.m_nStatTrak >= 0)
+            if (cfg.m_nStatTrak >= 0 && uFallbackStatTrak > 0)
                 g_Memory.WriteMemory<int>(uWeaponAddr + uFallbackStatTrak, cfg.m_nStatTrak);
-
-            // 3. Force engine to rebuild weapon model:
-            //    Trick: temporarily change ItemDefinitionIndex then restore it
-            //    This makes the engine think a new weapon was picked up
-            std::uint16_t originalDefIdx = g_Memory.ReadMemory<std::uint16_t>(uEconBase + uItemDefIdx);
-            g_Memory.WriteMemory<std::uint16_t>(uEconBase + uItemDefIdx, originalDefIdx + 1);
-            // Small delay to let engine notice change
-            std::this_thread::sleep_for(std::chrono::milliseconds(50));
-            g_Memory.WriteMemory<std::uint16_t>(uEconBase + uItemDefIdx, originalDefIdx);
-
-            // 4. Force MeshGroupMask = 2
-            static const std::uintptr_t uGameSceneNode = 816;
-            static const std::uintptr_t uMeshGroupMask = 336 + 456;
-            std::uintptr_t pSceneNode = g_Memory.ReadMemory<std::uintptr_t>(uWeaponAddr + uGameSceneNode);
-            if (pSceneNode > 0x1000)
-            {
-                g_Memory.WriteMemory<std::uint64_t>(pSceneNode + uMeshGroupMask, 2);
-            }
         }
     }
 }

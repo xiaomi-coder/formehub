@@ -35,6 +35,15 @@ public:
 		CONFIG_ADD_VARIABLE(bool,  m_bIgnoreTeammates, true);
 		CONFIG_ADD_VARIABLE(bool,  m_bSilentAim,       false);
 		CONFIG_ADD_VARIABLE(bool,  m_bDrawFOV,         true);
+		// V2.0 Aimbot rejimi: 0 = Klassik (eski, tez), 1 = Xavfsiz (anti-ban)
+		CONFIG_ADD_VARIABLE(int,   m_iAimMode,          1);      // 0=Klassik, 1=Xavfsiz
+		// V2.0 Anti-Ban (faqat Xavfsiz rejimda ishlaydi)
+		CONFIG_ADD_VARIABLE(bool,  m_bVisibilityCheck, true);   // Devordan aim QILMASIN
+		CONFIG_ADD_VARIABLE(float, m_flReactionTimeMin, 80.0f);  // Min reaktsiya vaqti (ms)
+		CONFIG_ADD_VARIABLE(float, m_flReactionTimeMax, 200.0f); // Max reaktsiya vaqti (ms)
+		CONFIG_ADD_VARIABLE(float, m_flMaxAimTime,     2500.0f); // Maks aim vaqti (ms)
+		CONFIG_ADD_VARIABLE(float, m_flAimJitter,      1.5f);    // Tasodifiy xatolik (piksel)
+		CONFIG_ADD_VARIABLE(float, m_flKillDelay,      400.0f);  // Target o'lganda kutish (ms)
 	}; AimBotVariables_t m_AimBot;
 
 	// =================== TRIGGERBOT ===================
@@ -46,6 +55,10 @@ public:
 		CONFIG_ADD_VARIABLE(float, m_flShotDelay,       50.0f);
 		CONFIG_ADD_VARIABLE(bool,  m_bIgnoreTeammates,  true);
 		CONFIG_ADD_VARIABLE(bool,  m_bOnlyVisible,      true); // don't shoot through walls
+		// V2.0 Anti-Ban
+		CONFIG_ADD_VARIABLE(float, m_flHitchance,       80.0f);  // 0-100% otish ehtimolligi
+		CONFIG_ADD_VARIABLE(int,   m_iMinBurst,         1);      // Minimum burst o'qlari
+		CONFIG_ADD_VARIABLE(int,   m_iMaxBurst,         1);      // Maximum burst o'qlari
 	}; TriggerBotVariables_t m_TriggerBot;
 
 
@@ -115,6 +128,9 @@ public:
 		CONFIG_ADD_VARIABLE(bool, m_bEnableSonar,     false);
 		CONFIG_ADD_VARIABLE(float,m_flSonarFOV,       5.f);
 		CONFIG_ADD_VARIABLE(bool, m_bAutoAccept,      true); // On by default globally
+		// V2.0 Custom Sounds
+		CONFIG_ADD_VARIABLE(bool,  m_bKillSound,       false);  // O'ldirganda alohida ovoz
+		CONFIG_ADD_VARIABLE(float, m_flSoundVolume,    80.0f);  // Ovoz balandligi (0-100)
 	}; MiscVariables_t m_Misc;
 
 	// ================== RCS ==========================
