@@ -7,6 +7,7 @@ bool SchemaSystem::Setup()
     if (!g_Memory.ReadMemoryRaw(uSchemaInterfaceAddress + CS_OFFSETOF(CSchemaSystem, m_pScopeArray), &uSchemaSystemScopeArrayPtr, sizeof(std::uintptr_t)))
     {
         std::cout << X("Failed to read scope array ptr") << std::endl;
+        ApplyFallbacks();
         return false;
     }
   
@@ -16,6 +17,7 @@ bool SchemaSystem::Setup()
     if (!g_Memory.ReadMemoryRaw(uSchemaSystemScopeArrayPtr, ppScopeArray, (nScopeSize * sizeof(void*))))
     {
         std::cout << X("Failed to read scope array") << std::endl;
+        ApplyFallbacks();
         return false;
     }
 
@@ -68,10 +70,13 @@ bool SchemaSystem::Setup()
 
     delete[] ppScopeArray;
 
-	// ---------------------------------------------------------------
-	// HARDCODED FALLBACK OFFSETS (from cs2-dumper, updated 2026-05)
-	// If schema system failed to populate these, use known-good values
-	// ---------------------------------------------------------------
+	ApplyFallbacks();
+
+	return m_mapSchemaOffsets.size() > 0;
+}
+
+void SchemaSystem::ApplyFallbacks()
+{
 	auto SetIfZero = [](FNV1A_t hash, std::uint32_t fallback) {
 		if (m_mapSchemaOffsets.find(hash) == m_mapSchemaOffsets.end() || m_mapSchemaOffsets[hash] == 0)
 			m_mapSchemaOffsets[hash] = fallback;
@@ -180,6 +185,4 @@ bool SchemaSystem::Setup()
 	SetIfZero(FNV1A::HashConst("C_EconItemView->m_iEntityQuality"), 444);
 
 	std::cout << "  [+] Schema offsets: " << m_mapSchemaOffsets.size() << " entries (with fallbacks)" << std::endl;
-
-	return m_mapSchemaOffsets.size() > 0;
 }
