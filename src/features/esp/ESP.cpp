@@ -587,11 +587,11 @@ void ESP::RenderGrenades(const std::vector<EntityObject_t>& vecEntities)
         if (obj.m_pEntity == nullptr || obj.m_eType != EEntityType::ENTITY_GRENADE)
             continue;
 
-        bool bIsSmoke = (obj.m_uHashedName == FNV1A::HashConst("C_SmokeGrenadeProjectile"));
-        bool bIsMolotov = (obj.m_uHashedName == FNV1A::HashConst("C_MolotovProjectile"));
-        bool bIsHE = (obj.m_uHashedName == FNV1A::HashConst("C_HEGrenadeProjectile"));
-        bool bIsFlash = (obj.m_uHashedName == FNV1A::HashConst("C_FlashbangProjectile"));
-        bool bIsDecoy = (obj.m_uHashedName == FNV1A::HashConst("C_DecoyProjectile"));
+        bool bIsSmoke = (obj.m_uHashedName == FNV1A::HashConst("C_SmokeGrenadeProjectile") || obj.m_uHashedName == FNV1A::HashConst("smokegrenade_projectile"));
+        bool bIsMolotov = (obj.m_uHashedName == FNV1A::HashConst("C_MolotovProjectile") || obj.m_uHashedName == FNV1A::HashConst("molotov_projectile"));
+        bool bIsHE = (obj.m_uHashedName == FNV1A::HashConst("C_HEGrenadeProjectile") || obj.m_uHashedName == FNV1A::HashConst("hegrenade_projectile"));
+        bool bIsFlash = (obj.m_uHashedName == FNV1A::HashConst("C_FlashbangProjectile") || obj.m_uHashedName == FNV1A::HashConst("flashbang_projectile"));
+        bool bIsDecoy = (obj.m_uHashedName == FNV1A::HashConst("C_DecoyProjectile") || obj.m_uHashedName == FNV1A::HashConst("decoy_projectile"));
 
         if (!bIsSmoke && !bIsMolotov && !bIsHE && !bIsFlash && !bIsDecoy)
             continue;

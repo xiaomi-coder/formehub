@@ -151,14 +151,19 @@ void SchemaSystem::ApplyFallbacks()
 	SetIfZero(FNV1A::HashConst("CCSPlayerController->m_iCompTeammateColor"), 2120);
 
 	// CPlayer_ObserverServices - NOT in client.dll schema, MUST have fallback!
-	SetIfZero(FNV1A::HashConst("CPlayer_ObserverServices->m_hObserverTarget"), 68);
-	SetIfZero(FNV1A::HashConst("CPlayer_ObserverServices->m_iObserverMode"), 64);
+	SetIfZero(FNV1A::HashConst("CPlayer_ObserverServices->m_hObserverTarget"), 76);
+	SetIfZero(FNV1A::HashConst("CPlayer_ObserverServices->m_iObserverMode"), 72);
 
 	// C_CSPlayerPawnBase / C_CSPlayerPawn
 	SetIfZero(FNV1A::HashConst("C_CSPlayerPawnBase->m_flFlashMaxAlpha"), 5116);
 	SetIfZero(FNV1A::HashConst("C_CSPlayerPawnBase->m_flFlashDuration"), 5120);
 	SetIfZero(FNV1A::HashConst("C_CSPlayerPawnBase->m_entitySpottedState"), 4464);
-	SetIfZero(FNV1A::HashConst("C_CSPlayerPawn->m_entitySpottedState"), 7216);
+	SetIfZero(FNV1A::HashConst("C_CSPlayerPawn->m_entitySpottedState"), 7224);
+	SetIfZero(FNV1A::HashConst("C_CSPlayerPawn->m_bIsScoped"), 7248);
+	SetIfZero(FNV1A::HashConst("C_CSPlayerPawn->m_bIsWalking"), 7216);
+	SetIfZero(FNV1A::HashConst("C_CSPlayerPawn->m_bIsDefusing"), 7250);
+	SetIfZero(FNV1A::HashConst("C_CSPlayerPawn->m_ArmorValue"), 7292);
+	SetIfZero(FNV1A::HashConst("C_CSPlayerPawn->m_iShotsFired"), 7268);
 
 	// EntitySpottedState_t
 	SetIfZero(FNV1A::HashConst("EntitySpottedState_t->m_bSpotted"), 8);
