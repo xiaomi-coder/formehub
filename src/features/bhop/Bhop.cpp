@@ -75,16 +75,10 @@ void Bhop::Run()
 
     if (bOnGround)
     {
-        if (iSpaceState == 0)
-        {
-            PressSpace();
-            iSpaceState = 1;
-        }
-        else
-        {
-            ReleaseSpace();
-            iSpaceState = 0;
-        }
+        // To jump immediately on the tick we touch the ground, we can queue a Release then Press instantly.
+        ReleaseSpace();
+        PressSpace();
+        iSpaceState = 1;
     }
     else
     {

@@ -27,7 +27,8 @@ bool SchemaSystem::Setup()
         if (!g_Memory.ReadMemoryRaw(ppScopeArray[i], &schemaScope, sizeof(CSchemaSystemTypeScope)) || !schemaScope.m_pDeclaredClasses)
             continue;
 
-        CSchemaDeclaredClassEntry* pDeclaredClassEntries = new CSchemaDeclaredClassEntry[schemaScope.m_uNumDeclaredClasses + 1U];
+        std::vector<CSchemaDeclaredClassEntry> vecDeclaredClassEntries(schemaScope.m_uNumDeclaredClasses + 1U);
+        CSchemaDeclaredClassEntry* pDeclaredClassEntries = vecDeclaredClassEntries.data();
         if (!g_Memory.ReadMemoryRaw(schemaScope.m_pDeclaredClasses, pDeclaredClassEntries, (schemaScope.m_uNumDeclaredClasses + 1U) * sizeof(CSchemaDeclaredClassEntry)))
             continue;
      

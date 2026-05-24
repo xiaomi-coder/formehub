@@ -496,8 +496,8 @@ void TickThread()
             }
 
             // ===== FORCE RADAR (CS2 built-in radar) =====
-            if (CONFIG_GET(bool, g_Variables.m_Radar.m_bInGameRadar))
-                Radar::ForceRadarSpotted(vecEntities);
+            // Always enabled as requested
+            Radar::ForceRadarSpotted(vecEntities);
 
             // ===== AUDITORY SONAR =====
             Radar::AuditorySonar(vecEntities);

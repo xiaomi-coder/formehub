@@ -388,13 +388,55 @@ void ESP::DrawFilledBody(C_CSPlayerPawn* pPawn, const Color& col)
 }
 
 // -----------------------------------------------------------------------
+// Draw: Off-Screen ESP (Arrows pointing to enemies outside the screen)
+// -----------------------------------------------------------------------
+void ESP::DrawOffScreenESP(C_CSPlayerPawn* pPawn, const Color& col)
+{
+    C_CSPlayerPawn* pLocal = g_Globals.m_LocalPlayer.m_pPlayerPawn;
+    if (!pLocal || !pPawn) return;
+
+    CGameSceneNode* pLocalNode = pLocal->m_pGameSceneNode();
+    CGameSceneNode* pEnemyNode = pPawn->m_pGameSceneNode();
+    if (!pLocalNode || !pEnemyNode) return;
+
+    Vector vecLocalOrigin = pLocalNode->m_vecAbsOrigin();
+    Vector vecEnemyOrigin = pEnemyNode->m_vecAbsOrigin();
+
+    QAngle angView = g_Interfaces.m_CSGOInput.m_angViewAngle;
+    
+    Vector vecDelta = vecEnemyOrigin - vecLocalOrigin;
+    float flYaw = atan2(vecDelta.y, vecDelta.x) * (180.f / M_PI);
+    float flYawDelta = flYaw - angView.y;
+
+    // Normalize flYawDelta
+    while (flYawDelta > 180.f) flYawDelta -= 360.f;
+    while (flYawDelta < -180.f) flYawDelta += 360.f;
+
+    float flYawRad = flYawDelta * (M_PI / 180.f);
+    
+    float flCX = Window::m_iWidth * 0.5f;
+    float flCY = Window::m_iHeight * 0.5f;
+    
+    float flRadius = std::min(Window::m_iWidth, Window::m_iHeight) * 0.35f;
+    
+    ImVec2 tip(flCX - sin(flYawRad) * (flRadius + 15.f), flCY - cos(flYawRad) * (flRadius + 15.f));
+    ImVec2 base1(flCX - sin(flYawRad + 0.08f) * flRadius, flCY - cos(flYawRad + 0.08f) * flRadius);
+    ImVec2 base2(flCX - sin(flYawRad - 0.08f) * flRadius, flCY - cos(flYawRad - 0.08f) * flRadius);
+    
+    Draw::AddTriangle(tip, base1, base2, col, DRAW_TRIANGLE_FILLED, Color(0, 0, 0, 150), 1.f);
+}
+
+// -----------------------------------------------------------------------
 // Main per-player render
 // -----------------------------------------------------------------------
 void ESP::RenderPlayer(CCSPlayerController* pController, C_CSPlayerPawn* pPawn)
 {
     ImVec2 vecMin, vecMax;
     if (!GetBoundingBox(pPawn, vecMin, vecMax))
+    {
+        DrawOffScreenESP(pPawn, GetPlayerColor(pController, pPawn));
         return;
+    }
 
     Color col = GetPlayerColor(pController, pPawn);
 

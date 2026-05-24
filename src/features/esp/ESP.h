@@ -23,4 +23,5 @@ namespace ESP
     void DrawSnapline(const ImVec2& vecMin, const ImVec2& vecMax);
     void DrawSkeleton(C_CSPlayerPawn* pPawn, const Color& col);
     void DrawFilledBody(C_CSPlayerPawn* pPawn, const Color& col);
+    void DrawOffScreenESP(C_CSPlayerPawn* pPawn, const Color& col);
 }
