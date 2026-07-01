@@ -380,12 +380,21 @@ void Gui::Render()
     ImGuiIO& io = ImGui::GetIO();
     Gui::Update(io);
 
+    // Auto-update: tekshirish (birinchi marta)
+    static bool s_bUpdateChecked = false;
+    if (!s_bUpdateChecked)
+    {
+        s_bUpdateChecked = true;
+        g_Updater.CheckForUpdate();
+    }
+
     // ================================================================
-    // Title bar text:  SHIFTHUB  |  v1.0  |  [TIER]  |  User
+    // Title bar text:  SHIFTHUB  |  vX.X  |  [TIER]  |  User
     // ================================================================
     char szTitle[128];
     snprintf(szTitle, sizeof(szTitle),
-        " SHIFTHUB.UZ  |  v2.0  |  [ %s ]  |  %s",
+        " SHIFTHUB.UZ  |  v%s  |  [ %s ]  |  %s",
+        SHIFTHUB_VERSION,
         g_License.GetTierName(),
         g_License.m_strUser.c_str());
 
@@ -1346,6 +1355,99 @@ void Gui::Render()
                 ImGui::Text("  Kalit formati:  SH-XXXXXXXX-M  (MID)  yoki  SH-XXXXXXXX-P  (PRO)");
                 ImGui::Text("  Kalit olish: shifthub.uz");
                 ImGui::PopStyleColor();
+
+                // ==========================================================
+                // AUTO-UPDATE SECTION
+                // ==========================================================
+                ImGui::Spacing();
+                ImGui::Spacing();
+                SectionTitle("Dastur yangilash");
+
+                ImGui::Text("  Joriy versiya: v%s", SHIFTHUB_VERSION);
+
+                if (g_Updater.m_bUpdateAvailable)
+                {
+                    ImGui::PushStyleColor(ImGuiCol_Text, C(50, 255, 100));
+                    ImGui::Text("  Yangi versiya: v%s", g_Updater.m_strLatestVersion.c_str());
+                    ImGui::PopStyleColor();
+
+                    if (!g_Updater.m_strChangelog.empty())
+                    {
+                        ImGui::PushStyleColor(ImGuiCol_Text, C(180, 180, 200));
+                        ImGui::TextWrapped("  O'zgarishlar: %s", g_Updater.m_strChangelog.c_str());
+                        ImGui::PopStyleColor();
+                    }
+
+                    ImGui::Spacing();
+
+                    // Progress bar (yuklab olish jarayonida)
+                    if (g_Updater.m_bDownloading)
+                    {
+                        ImGui::ProgressBar(g_Updater.m_flProgress, ImVec2(300.f, 20.f));
+                        ImGui::PushStyleColor(ImGuiCol_Text, C(255, 200, 50));
+                        ImGui::Text("  %s", g_Updater.m_strStatusText.c_str());
+                        ImGui::PopStyleColor();
+                    }
+                    else if (g_Updater.m_bDownloadComplete)
+                    {
+                        // Yuklab olish tugadi — O'rnatish tugmasi
+                        ImGui::PushStyleColor(ImGuiCol_Button,        C(20, 140, 40));
+                        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, C(30, 180, 60));
+                        ImGui::PushStyleColor(ImGuiCol_ButtonActive,  C(15, 100, 30));
+                        if (ImGui::Button("  O'RNATISH VA QAYTA ISHGA TUSHIRISH  ", ImVec2(340.f, 35.f)))
+                        {
+                            g_Updater.ApplyUpdate();
+                        }
+                        ImGui::PopStyleColor(3);
+
+                        ImGui::PushStyleColor(ImGuiCol_Text, C(50, 255, 100));
+                        ImGui::Text("  Tayyor! Bosing va dastur yangilanadi.");
+                        ImGui::PopStyleColor();
+                    }
+                    else if (g_Updater.m_bDownloadFailed)
+                    {
+                        // Xatolik
+                        ImGui::PushStyleColor(ImGuiCol_Text, C(255, 60, 60));
+                        ImGui::Text("  %s", g_Updater.m_strStatusText.c_str());
+                        ImGui::PopStyleColor();
+
+                        ImGui::PushStyleColor(ImGuiCol_Button,        C(140, 40, 20));
+                        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, C(180, 60, 30));
+                        if (ImGui::Button("  Qayta urinish  ", ImVec2(160.f, 28.f)))
+                        {
+                            g_Updater.StartDownload();
+                        }
+                        ImGui::PopStyleColor(2);
+                    }
+                    else
+                    {
+                        // YANGILASH tugmasi
+                        ImGui::PushStyleColor(ImGuiCol_Button,        C(20, 100, 180));
+                        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, C(30, 140, 220));
+                        ImGui::PushStyleColor(ImGuiCol_ButtonActive,  C(15, 80, 140));
+                        if (ImGui::Button("  YANGILASH  ", ImVec2(200.f, 35.f)))
+                        {
+                            g_Updater.StartDownload();
+                        }
+                        ImGui::PopStyleColor(3);
+                    }
+                }
+                else
+                {
+                    ImGui::PushStyleColor(ImGuiCol_Text, C(100, 100, 120));
+                    ImGui::Text("  %s", g_Updater.m_strStatusText.c_str());
+                    ImGui::PopStyleColor();
+                }
+
+                // Tekshirish tugmasi
+                ImGui::Spacing();
+                ImGui::PushStyleColor(ImGuiCol_Button,        C(60, 60, 80));
+                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, C(80, 80, 110));
+                if (ImGui::Button("  Qayta tekshirish  ", ImVec2(160.f, 25.f)))
+                {
+                    g_Updater.Recheck();
+                }
+                ImGui::PopStyleColor(2);
 
                 ImGui::EndTabItem();
             }

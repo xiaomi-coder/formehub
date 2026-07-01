@@ -57,7 +57,10 @@ bool LoginWindow::Create()
     m_wc.lpszClassName = L"SH_Login_v2";
     RegisterClassExW(&m_wc);
 
-    m_hWnd = CreateWindowExW(0, m_wc.lpszClassName, L"SHIFTHUB v2.0",
+    // Build wide title with version
+    wchar_t wszTitle[64];
+    swprintf_s(wszTitle, L"SHIFTHUB v%hs", SHIFTHUB_VERSION);
+    m_hWnd = CreateWindowExW(0, m_wc.lpszClassName, wszTitle,
         WS_POPUP | WS_VISIBLE, (scrW - wndW) / 2, (scrH - wndH) / 2, wndW, wndH,
         NULL, NULL, m_wc.hInstance, NULL);
     if (!m_hWnd) return false;
@@ -203,7 +206,9 @@ bool LoginWindow::Run()
                 ImGui::PopStyleColor();
             }
             {
-                const char* t = "Professional CS2 Software  |  v2.0";
+                char szSub[64];
+                snprintf(szSub, sizeof(szSub), "Professional CS2 Software  |  v%s", SHIFTHUB_VERSION);
+                const char* t = szSub;
                 ImGui::SetCursorPosX((W - ImGui::CalcTextSize(t).x) * 0.5f);
                 ImGui::PushStyleColor(ImGuiCol_Text, { 0.28f, 0.42f, 0.35f, 1.0f });
                 ImGui::Text("%s", t);
@@ -332,7 +337,9 @@ bool LoginWindow::Run()
             // --- HEADER ---
             ImGui::SetCursorPosY(18);
             {
-                const char* t = "S H I F T H U B  v2.0";
+                char szHdr[64];
+                snprintf(szHdr, sizeof(szHdr), "S H I F T H U B  v%s", SHIFTHUB_VERSION);
+                const char* t = szHdr;
                 ImGui::SetCursorPosX((W - ImGui::CalcTextSize(t).x) * 0.5f);
                 ImGui::PushStyleColor(ImGuiCol_Text, { 0, 0.82f, 0.30f, 1 });
                 ImGui::Text("%s", t); ImGui::PopStyleColor();

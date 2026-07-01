@@ -97,7 +97,7 @@ void SchemaSystem::ApplyFallbacks()
 	SetIfZero(FNV1A::HashConst("C_BaseEntity->m_nSubclassID"), 896);
 
 	// CCSPlayerController
-	SetIfZero(FNV1A::HashConst("CCSPlayerController->m_sSanitizedPlayerName"), 2136);
+	SetIfZero(FNV1A::HashConst("CCSPlayerController->m_sSanitizedPlayerName"), 2144);
 
 	// C_PlantedC4
 	SetIfZero(FNV1A::HashConst("C_PlantedC4->m_flC4Blow"), 4496);

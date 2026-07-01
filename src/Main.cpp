@@ -152,7 +152,7 @@ void RenderThread()
             if (CONFIG_GET(bool, g_Variables.m_Misc.m_bWatermark))
             {
                 char szWatermark[64];
-                snprintf(szWatermark, sizeof(szWatermark), "shifthub.uz v2.0 | FPS: %03d", static_cast<int>(ImGui::GetIO().Framerate));
+                snprintf(szWatermark, sizeof(szWatermark), "shifthub.uz v%s | FPS: %03d", SHIFTHUB_VERSION, static_cast<int>(ImGui::GetIO().Framerate));
                 
                 ImVec2 textSize = Fonts::Default->CalcTextSizeA(Fonts::Default->FontSize, FLT_MAX, 0.0f, szWatermark);
                 ImVec2 padding(8.f, 4.f);
