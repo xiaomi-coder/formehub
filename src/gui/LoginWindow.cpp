@@ -266,6 +266,39 @@ bool LoginWindow::Run()
                     ImGui::PushStyleColor(ImGuiCol_Text, { 0.25f, 0.40f, 0.32f, 1 });
                     ImGui::Text("%s", tg); ImGui::PopStyleColor();
                 }
+
+                // FREE VERSION BUTTON
+                ImGui::Spacing(); ImGui::Spacing();
+                ImGui::SetCursorPosX(fX);
+                ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, { 0, 10 });
+                ImGui::PushStyleColor(ImGuiCol_Button, { 0.1f, 0.2f, 0.15f, 1 });
+                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, { 0.15f, 0.3f, 0.2f, 1 });
+                ImGui::PushStyleColor(ImGuiCol_Text, { 0.6f, 0.8f, 0.7f, 1 });
+                if (ImGui::Button("FREE o'ynamoq!", { fW, 0 }))
+                {
+                    g_License.m_strUser = "FreeUser";
+                    g_License.m_eTier = ETier::LITE; // Free tier
+                    g_License.m_strExpiry = "Cheksiz (FREE)";
+                    g_License.m_strToken = "FREE_MODE";
+                    ePhase = EPhase::LOADING; nCur = 0;
+                    for (int i = 0; i < nSteps; i++) { steps[i].prog = 0; steps[i].done = false; }
+                    bCS2Found = false;
+
+                    // Apply FREE mode restrictions automatically
+                    CONFIG_GET(bool, g_Variables.m_PlayerVisuals.m_bEnableVisuals) = true; // MUST ENABLE THIS FOR WH
+                    CONFIG_GET_ARRAY(bool, g_Variables.m_PlayerVisuals.m_vecVisualsModifiers, VISUALS_IGNORE_TEAMMATES) = true; // Jamoani e'tiborsiz qoldirish
+                    CONFIG_GET(bool, g_Variables.m_PlayerVisuals.m_bDrawBox) = true;
+                    CONFIG_GET(bool, g_Variables.m_PlayerVisuals.m_bDrawHealthBar) = true;
+                    CONFIG_GET(bool, g_Variables.m_PlayerVisuals.m_bDrawWeapon) = true;
+                    CONFIG_GET(bool, g_Variables.m_PlayerVisuals.m_bDrawHasC4) = true;
+                    CONFIG_GET(bool, g_Variables.m_Misc.m_bSniperCrosshair) = true;
+                    CONFIG_GET(bool, g_Variables.m_SpectatorList.m_bEnableSpectatorList) = true; // Automatically show spectator list
+                    CONFIG_GET(bool, g_Variables.m_Misc.m_bAntiFlash) = true;   // Flash himoya
+                    CONFIG_GET(bool, g_Variables.m_Misc.m_bC4Timer) = true;     // C4 ogohlantiruvchi
+                    CONFIG_GET(bool, g_Variables.m_Misc.m_bGrenadeWarning) = true; // Grenade warning
+                }
+                ImGui::PopStyleColor(3);
+                ImGui::PopStyleVar();
             }
             else // CONNECTING
             {

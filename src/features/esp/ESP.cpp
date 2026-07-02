@@ -10,6 +10,8 @@ bool ESP::GetBoundingBox(C_CSPlayerPawn* pPawn, ImVec2& vecMin, ImVec2& vecMax)
         return false;
 
     Vector vecOrigin = pSceneNode->m_vecAbsOrigin();
+    if (vecOrigin.x == 0.f && vecOrigin.y == 0.f && vecOrigin.z == 0.f)
+        return false;
 
     float flHeadZ = 72.f;
     CCollisionProperty* pCollision = pPawn->m_pCollision();
@@ -305,6 +307,9 @@ void ESP::DrawSkeleton(C_CSPlayerPawn* pPawn, const Color& col)
         BoneData_t bParent = g_Memory.ReadMemory<BoneData_t>(reinterpret_cast<std::uintptr_t>(pBones) + parent * sizeof(BoneData_t));
         BoneData_t bChild  = g_Memory.ReadMemory<BoneData_t>(reinterpret_cast<std::uintptr_t>(pBones) + child  * sizeof(BoneData_t));
 
+        if (bParent.m_vecPosition.x == 0.f && bParent.m_vecPosition.y == 0.f) continue;
+        if (bChild.m_vecPosition.x == 0.f && bChild.m_vecPosition.y == 0.f) continue;
+
         ImVec2 scrParent, scrChild;
         if (!Draw::WorldToScreen(bParent.m_vecPosition, scrParent)) continue;
         if (!Draw::WorldToScreen(bChild.m_vecPosition,  scrChild))  continue;
@@ -328,6 +333,7 @@ void ESP::DrawFilledBody(C_CSPlayerPawn* pPawn, const Color& col)
     auto ReadBone = [&](int idx) -> ImVec2 {
         BoneData_t b = g_Memory.ReadMemory<BoneData_t>(
             reinterpret_cast<std::uintptr_t>(pBones) + idx * sizeof(BoneData_t));
+        if (b.m_vecPosition.x == 0.f && b.m_vecPosition.y == 0.f) return ImVec2(-1, -1);
         ImVec2 scr;
         if (!Draw::WorldToScreen(b.m_vecPosition, scr))
             return ImVec2(-1, -1);
@@ -434,8 +440,6 @@ void ESP::RenderPlayer(CCSPlayerController* pController, C_CSPlayerPawn* pPawn)
     ImVec2 vecMin, vecMax;
     if (!GetBoundingBox(pPawn, vecMin, vecMax))
     {
-        if (CONFIG_GET(bool, g_Variables.m_PlayerVisuals.m_bDrawOffScreen))
-            DrawOffScreenESP(pPawn, GetPlayerColor(pController, pPawn));
         return;
     }
 
