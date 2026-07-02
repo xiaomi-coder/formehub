@@ -470,6 +470,8 @@ void Gui::Render()
                     ImGui::Checkbox(X("Chiziqlar"),  &CONFIG_GET(bool, g_Variables.m_PlayerVisuals.m_bDrawSnaplines));
 
                     ImGui::Checkbox(X("Bomba ogohlantirish"), &CONFIG_GET(bool, g_Variables.m_PlayerVisuals.m_bDrawHasC4));
+                    ImGui::SameLine(220.f);
+                    ImGui::Checkbox(X("Ekrandan tashqari belgilar"), &CONFIG_GET(bool, g_Variables.m_PlayerVisuals.m_bDrawOffScreen));
 
                     ImGui::Spacing();
                     SectionTitle("Yerdagi Qurollar (Loot)");

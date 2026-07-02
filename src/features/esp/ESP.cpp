@@ -434,7 +434,8 @@ void ESP::RenderPlayer(CCSPlayerController* pController, C_CSPlayerPawn* pPawn)
     ImVec2 vecMin, vecMax;
     if (!GetBoundingBox(pPawn, vecMin, vecMax))
     {
-        DrawOffScreenESP(pPawn, GetPlayerColor(pController, pPawn));
+        if (CONFIG_GET(bool, g_Variables.m_PlayerVisuals.m_bDrawOffScreen))
+            DrawOffScreenESP(pPawn, GetPlayerColor(pController, pPawn));
         return;
     }
 

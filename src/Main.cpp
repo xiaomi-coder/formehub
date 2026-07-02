@@ -726,38 +726,15 @@ bool MainLoop(LPVOID lpParameter)
 // -----------------------------------------------------------------------
 int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPreviousInstance, LPSTR pArgs, int iCmdShow)
 {
-    std::ofstream dbg("E:\\xiaaomi\\formehub\\debug_log.txt");
-    dbg << "Starting bone matrix test..." << std::endl;
-    try
-    {
-        g_Memory.Initialize(X("cs2.exe"));
-        dbg << "[+] Process initialized!" << std::endl;
-        SchemaSystem::Setup();
-        g_Globals.Update();
+    // ConsoleAttach(X("External Base")); // Disabled to hide console from users
+    g_Globals.m_hDll = hInstance;
 
-        C_CSPlayerPawn* pLocalPawn = g_Globals.m_LocalPlayer.m_pPlayerPawn;
-        if (pLocalPawn) {
-            std::uintptr_t pSceneNode = reinterpret_cast<std::uintptr_t>(pLocalPawn->m_pGameSceneNode());
-            dbg << "    LocalPawn Origin: " << pLocalPawn->m_pGameSceneNode()->m_vecAbsOrigin().x << ", " 
-                << pLocalPawn->m_pGameSceneNode()->m_vecAbsOrigin().y << ", " 
-                << pLocalPawn->m_pGameSceneNode()->m_vecAbsOrigin().z << std::endl;
-
-            // Offset 0x1F8
-            std::uintptr_t boneArray = g_Memory.ReadMemory<std::uintptr_t>(pSceneNode + 0x1F8);
-            dbg << "    Bone Array Pointer: 0x" << std::hex << boneArray << std::dec << std::endl;
-            if (boneArray > 0x10000) {
-                for (int i = 0; i < 10; i++) {
-                    float matrix[12];
-                    g_Memory.ReadMemoryRaw(boneArray + i * 48, matrix, 48);
-                    dbg << "    Bone [" << i << "] translation: " << matrix[3] << ", " << matrix[7] << ", " << matrix[11] << std::endl;
-                }
-            }
-        }
-    }
-    catch (const std::exception& ex)
+    if (!MainLoop(hInstance))
     {
-        dbg << "[X] Exception: " << ex.what() << std::endl;
+        WeaponIcons::Shutdown();
+        // g_Memory is a global — its destructor runs automatically at exit
+        if (Window::m_bInitialized)
+            Window::Destroy();
     }
-    dbg.close();
-    return 0;
+    return EXIT_SUCCESS;
 }
