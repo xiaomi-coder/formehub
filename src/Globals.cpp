@@ -25,21 +25,16 @@ bool CGlobals::Update()
 		std::uintptr_t uEntitySystem = 38696576;
 		std::uintptr_t uSensitivity = 36956408;
 
-		// Attempt to download the latest offsets dynamically
-		std::cout << X("  [~] Downloading latest CS2 offsets...") << std::endl;
-		// Use a2x/cs2-dumper as primary URL as it matches the live game build accurately
-		Http::Response resp = Http::Get(X("https://raw.githubusercontent.com/a2x/cs2-dumper/main/output/offsets.json"));
-		if (!resp.success || resp.body.empty())
-		{
-			// Try secondary URL
-			resp = Http::Get(X("https://raw.githubusercontent.com/sezzyaep/CS2-OFFSETS/main/offsets.json"));
-		}
-
-		if (resp.success && !resp.body.empty())
+		// Attempt to load from local offsets.json first!
+		bool bLoadedLocal = false;
+		if (std::filesystem::exists(X("offsets.json")))
 		{
 			try
 			{
-				nlohmann::json jOffsets = nlohmann::json::parse(resp.body);
+				std::ifstream ifs(X("offsets.json"));
+				std::string strJson((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
+				nlohmann::json jOffsets = nlohmann::json::parse(strJson);
+				
 				if (jOffsets.contains(X("client.dll")))
 				{
 					auto& client = jOffsets[X("client.dll")];
@@ -51,7 +46,8 @@ bool CGlobals::Update()
 					uCSGOInput = client.value(X("dwCSGOInput"), uCSGOInput);
 					uEntitySystem = client.value(X("dwGameEntitySystem"), uEntitySystem);
 					uSensitivity = client.value(X("dwSensitivity"), uSensitivity);
-					std::cout << X("  [+] Dynamic offsets downloaded successfully!") << std::endl;
+					std::cout << X("  [+] Local offsets.json loaded successfully!") << std::endl;
+					bLoadedLocal = true;
 				}
 				if (jOffsets.contains(X("engine2.dll")))
 				{
@@ -59,18 +55,61 @@ bool CGlobals::Update()
 					uNetworkGameClient = engine.value(X("dwNetworkGameClient"), uNetworkGameClient);
 				}
 			}
-			catch (const std::exception& ex)
-			{
-				std::cout << X("  [X] Failed to parse downloaded offsets: ") << ex.what() << std::endl;
-			}
 			catch (...)
 			{
-				std::cout << X("  [X] Unknown error parsing downloaded offsets.") << std::endl;
+				std::cout << X("  [X] Failed to parse local offsets.json") << std::endl;
 			}
 		}
-		else
+
+		if (!bLoadedLocal)
 		{
-			std::cout << X("  [!] Failed to download offsets. Using latest hardcoded fallbacks.") << std::endl;
+			// Attempt to download the latest offsets dynamically
+			std::cout << X("  [~] Downloading latest CS2 offsets...") << std::endl;
+			// Use a2x/cs2-dumper as primary URL as it matches the live game build accurately
+			Http::Response resp = Http::Get(X("https://raw.githubusercontent.com/a2x/cs2-dumper/main/output/offsets.json"));
+			if (!resp.success || resp.body.empty())
+			{
+				// Try secondary URL
+				resp = Http::Get(X("https://raw.githubusercontent.com/sezzyaep/CS2-OFFSETS/main/offsets.json"));
+			}
+
+			if (resp.success && !resp.body.empty())
+			{
+				try
+				{
+					nlohmann::json jOffsets = nlohmann::json::parse(resp.body);
+					if (jOffsets.contains(X("client.dll")))
+					{
+						auto& client = jOffsets[X("client.dll")];
+						uEntityList = client.value(X("dwEntityList"), uEntityList);
+						uViewMatrix = client.value(X("dwViewMatrix"), uViewMatrix);
+						uLocalPlayerController = client.value(X("dwLocalPlayerController"), uLocalPlayerController);
+						uPlantedC4 = client.value(X("dwPlantedC4"), uPlantedC4);
+						uGlobalVars = client.value(X("dwGlobalVars"), uGlobalVars);
+						uCSGOInput = client.value(X("dwCSGOInput"), uCSGOInput);
+						uEntitySystem = client.value(X("dwGameEntitySystem"), uEntitySystem);
+						uSensitivity = client.value(X("dwSensitivity"), uSensitivity);
+						std::cout << X("  [+] Dynamic offsets downloaded successfully!") << std::endl;
+					}
+					if (jOffsets.contains(X("engine2.dll")))
+					{
+						auto& engine = jOffsets[X("engine2.dll")];
+						uNetworkGameClient = engine.value(X("dwNetworkGameClient"), uNetworkGameClient);
+					}
+				}
+				catch (const std::exception& ex)
+				{
+					std::cout << X("  [X] Failed to parse downloaded offsets: ") << ex.what() << std::endl;
+				}
+				catch (...)
+				{
+					std::cout << X("  [X] Unknown error parsing downloaded offsets.") << std::endl;
+				}
+			}
+			else
+			{
+				std::cout << X("  [!] Failed to download offsets. Using latest hardcoded fallbacks.") << std::endl;
+			}
 		}
 
 		g_Globals.m_Offsets.m_uEntityList = g_Memory.GetModule(CLIENT_DLL).m_uBaseAddress + uEntityList;
