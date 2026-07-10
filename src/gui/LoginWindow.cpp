@@ -137,12 +137,11 @@ bool LoginWindow::Run()
         float prog; bool done;
     };
     Step steps[] = {
-        { "Litsenziyani tekshirish",  "[1/4]", 0, false },
-        { "Fayllarni yuklash",        "[2/4]", 0, false },
-        { "Counter-Strike 2",         "[3/4]", 0, false },
-        { "Dasturni sozlash",         "[4/4]", 0, false },
+        { "Litsenziyani tekshirish",  "[1/3]", 0, false },
+        { "Counter-Strike 2",         "[2/3]", 0, false },
+        { "Dasturni sozlash",         "[3/3]", 0, false },
     };
-    int nSteps = 4, nCur = 0;
+    int nSteps = 3, nCur = 0;
     bool bCS2Found = false;
     float flCS2CheckTimer = 0.f;
 
@@ -472,7 +471,7 @@ bool LoginWindow::Run()
             // ===== ANIMATE STEPS =====
             if (nCur < nSteps && !steps[nCur].done)
             {
-                if (nCur == 2) // Counter-Strike 2 — wait for CS2
+                if (nCur == 1) // Counter-Strike 2 — wait for CS2 (Now step 2, index 1)
                 {
                     flCS2CheckTimer += dt;
                     if (flCS2CheckTimer >= 0.5f) // check every 500ms
@@ -494,7 +493,7 @@ bool LoginWindow::Run()
                         steps[nCur].prog = pulse;
 
                         // Show message
-                        ImGui::SetCursorPos({ sX + 60, sY + 2 * 68 + 22 });
+                        ImGui::SetCursorPos({ sX + 60, sY + 1 * 68 + 22 }); // Adjusted for step 2
                         ImGui::PushStyleColor(ImGuiCol_Text, { 0.7f, 0.5f, 0.2f, 1 });
                         ImGui::Text("CS2 ni oching! Kutilmoqda...");
                         ImGui::PopStyleColor();
@@ -502,7 +501,7 @@ bool LoginWindow::Run()
                 }
                 else // Other steps — auto progress
                 {
-                    float speed = (nCur == 0) ? 1.0f : (nCur == 1) ? 0.8f : 0.6f;
+                    float speed = (nCur == 0) ? 1.0f : 0.6f;
                     steps[nCur].prog += dt / speed;
                     if (steps[nCur].prog >= 1.f)
                     {
@@ -510,7 +509,7 @@ bool LoginWindow::Run()
 
                         // Real actions
                         if (nCur == 0) g_License.CheckLicense();
-                        if (nCur == 1) g_License.DownloadDependencies();
+                        // Removed DownloadDependencies
 
                         nCur++;
                     }

@@ -473,6 +473,10 @@ void Gui::Render()
                     ImGui::SameLine(220.f);
                     ImGui::Checkbox(X("Ekrandan tashqari belgilar"), &CONFIG_GET(bool, g_Variables.m_PlayerVisuals.m_bDrawOffScreen));
 
+                    ImGui::Checkbox(X("3D Zarar Ko'rsatkichi (Damage)"), &CONFIG_GET(bool, g_Variables.m_Misc.m_bDamageIndicator));
+                    ImGui::SameLine(280.f);
+                    ColorEdit4Shim(X("##dmgcol"), CONFIG_GET(Color, g_Variables.m_Misc.m_colDamageIndicator));
+
                     ImGui::Spacing();
                     SectionTitle("Yerdagi Qurollar (Loot)");
                     ImGui::Checkbox(X("Loot ESP yoqish"), &CONFIG_GET(bool, g_Variables.m_ESP.m_bDroppedWeapons));

@@ -97,10 +97,10 @@ void RenderThread()
                     if (object.m_eType != EEntityType::ENTITY_PLAYER) continue;
 
                     CCSPlayerController* pController = reinterpret_cast<CCSPlayerController*>(object.m_pEntity);
-                    if (!pController || pController->m_bIsLocalPlayerController()) continue;
+                    if (!pController || pController->m_bIsLocalPlayerController() || !pController->m_bPawnIsAlive()) continue;
 
-                    C_CSPlayerPawn* pPawn = reinterpret_cast<C_CSPlayerPawn*>(pController->m_hPawn().Get());
-                    if (!pPawn || !pPawn->IsAlive()) continue;
+                    C_CSPlayerPawn* pPawn = reinterpret_cast<C_CSPlayerPawn*>(pController->m_hPlayerPawn().Get());
+                    if (!pPawn) continue;
 
                     if (bDrawESP)
                         ESP::RenderPlayer(pController, pPawn);
@@ -128,6 +128,9 @@ void RenderThread()
 
             // ===== DROPPED WEAPONS ESP =====
             ESP::RenderWeapons(vecEntities);
+
+            // ===== 3D DAMAGE INDICATORS =====
+            ESP::RenderDamageIndicators();
 
             // ===== SNIPER CROSSHAIR =====
             if (CONFIG_GET(bool, g_Variables.m_Misc.m_bSniperCrosshair))
@@ -459,8 +462,10 @@ void TickThread()
                     CCSPlayerController* pController = reinterpret_cast<CCSPlayerController*>(object.m_pEntity);
                     if (!pController || pController->m_bIsLocalPlayerController()) continue;
 
-                    C_CSPlayerPawn* pPawn = reinterpret_cast<C_CSPlayerPawn*>(pController->m_hPawn().Get());
-                    if (!pPawn || !pPawn->IsAlive())
+                    // Fix: Use m_hPlayerPawn() instead of m_hPawn()
+                    C_CSPlayerPawn* pPawn = reinterpret_cast<C_CSPlayerPawn*>(pController->m_hPlayerPawn().Get());
+                    // Fix: Use pController->m_bPawnIsAlive() instead of pPawn->IsAlive()
+                    if (!pPawn || !pController->m_bPawnIsAlive())
                     {
                         if (pPawn)
                             s_mapEnemyHP.erase(reinterpret_cast<std::uintptr_t>(pPawn));
@@ -476,14 +481,28 @@ void TickThread()
                     auto it = s_mapEnemyHP.find(uPawnAddress);
                     if (it != s_mapEnemyHP.end())
                     {
-                        if (it->second > iHealth && iHealth > 0)
+                        if (it->second > iHealth && iHealth >= 0)
                         {
+                            // Calculate exact damage done
+                            int damage = it->second - (iHealth < 0 ? 0 : iHealth);
+                            if (CONFIG_GET(bool, g_Variables.m_Misc.m_bDamageIndicator) && damage > 0 && damage <= 100)
+                            {
+                                ESP::AddDamageIndicator(pPawn->GetEyePosition(), damage);
+                            }
+
                             // Hit sound — o'q tegdi
                             if (CONFIG_GET(bool, g_Variables.m_Misc.m_bHitSound))
                                 PlaySoundA(s_strHitSoundPath.c_str(), NULL, SND_ASYNC | SND_FILENAME);
                         }
                         else if (it->second > 0 && iHealth <= 0)
                         {
+                            // Calculate fatal damage done
+                            int damage = it->second;
+                            if (CONFIG_GET(bool, g_Variables.m_Misc.m_bDamageIndicator) && damage > 0 && damage <= 100)
+                            {
+                                ESP::AddDamageIndicator(pPawn->GetEyePosition(), damage);
+                            }
+
                             // V2.0: Kill sound — dushman o'ldi!
                             if (CONFIG_GET(bool, g_Variables.m_Misc.m_bKillSound))
                                 PlaySoundA(s_strKillSoundPath.c_str(), NULL, SND_ASYNC | SND_FILENAME);
@@ -653,8 +672,14 @@ bool MainLoop(LPVOID lpParameter)
             g_Memory.Initialize(X("cs2.exe"));
 
             // Wait for navsystem.dll
+            int iNavAttempts = 0;
             while (g_Memory.GetModule(NAVSYSTEM_DLL).m_uBaseAddress == 0U)
+            {
                 g_Utilities.Sleep(500.0f);
+                iNavAttempts++;
+                if (iNavAttempts > 30) // 15 soniya
+                    throw std::runtime_error("CS2 modullari (navsystem.dll) topilmadi! O'yin to'liq yonguncha kuting yoki dasturni Administrator nomidan ishlating.");
+            }
 
             SchemaSystem::Setup();
         }
@@ -726,6 +751,19 @@ bool MainLoop(LPVOID lpParameter)
 // -----------------------------------------------------------------------
 int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPreviousInstance, LPSTR pArgs, int iCmdShow)
 {
+    // Fix CWD issue when launched from browsers or shortcuts
+    char szPath[MAX_PATH];
+    if (GetModuleFileNameA(NULL, szPath, MAX_PATH))
+    {
+        std::string strPath = szPath;
+        size_t pos = strPath.find_last_of("\\/");
+        if (pos != std::string::npos)
+        {
+            strPath = strPath.substr(0, pos);
+            SetCurrentDirectoryA(strPath.c_str());
+        }
+    }
+
     // ConsoleAttach(X("External Base")); // Disabled to hide console from users
     g_Globals.m_hDll = hInstance;
 

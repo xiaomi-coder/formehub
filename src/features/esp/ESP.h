@@ -24,4 +24,15 @@ namespace ESP
     void DrawSkeleton(C_CSPlayerPawn* pPawn, const Color& col);
     void DrawFilledBody(C_CSPlayerPawn* pPawn, const Color& col);
     void DrawOffScreenESP(C_CSPlayerPawn* pPawn, const Color& col);
+
+    // 3D Damage Indicators
+    struct DamageIndicator_t
+    {
+        Vector m_vecPos;
+        int m_iDamage;
+        float m_flTimeCreated;
+    };
+    extern std::vector<DamageIndicator_t> g_vecDamageIndicators;
+    void AddDamageIndicator(Vector vecPos, int iDamage);
+    void RenderDamageIndicators();
 }

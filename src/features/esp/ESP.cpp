@@ -947,3 +947,65 @@ void ESP::RenderWeapons(const std::vector<EntityObject_t>& vecEntities)
     }
 }
 
+std::vector<ESP::DamageIndicator_t> ESP::g_vecDamageIndicators;
+
+void ESP::AddDamageIndicator(Vector vecPos, int iDamage)
+{
+    DamageIndicator_t text;
+    text.m_vecPos = vecPos;
+    // Kichik tasodifiy siljish (overlap bo'lmasligi uchun)
+    text.m_vecPos.x += (rand() % 20) - 10.f;
+    text.m_vecPos.y += (rand() % 20) - 10.f;
+    text.m_vecPos.z += (rand() % 10) - 5.f;
+    text.m_iDamage = iDamage;
+    text.m_flTimeCreated = (float)ImGui::GetTime(); // Use ImGui time which is safe in RenderThread
+
+    g_vecDamageIndicators.push_back(text);
+}
+
+void ESP::RenderDamageIndicators()
+{
+    if (!CONFIG_GET(bool, g_Variables.m_Misc.m_bDamageIndicator))
+        return;
+
+    float flCurrentTime = (float)ImGui::GetTime();
+    float flLifetime = 1.5f;
+
+    for (auto it = g_vecDamageIndicators.begin(); it != g_vecDamageIndicators.end(); )
+    {
+        float flTimeDelta = flCurrentTime - it->m_flTimeCreated;
+        if (flTimeDelta > flLifetime)
+        {
+            it = g_vecDamageIndicators.erase(it);
+            continue;
+        }
+
+        Vector vecRenderPos = it->m_vecPos;
+        vecRenderPos.z += flTimeDelta * 40.0f; // float upwards
+
+        ImVec2 vecScreen;
+        if (Draw::WorldToScreen(vecRenderPos, vecScreen))
+        {
+            float flAlpha = 1.0f;
+            if (flTimeDelta > (flLifetime - 0.5f))
+            {
+                flAlpha = (flLifetime - flTimeDelta) / 0.5f;
+            }
+
+            Color baseCol = CONFIG_GET(Color, g_Variables.m_Misc.m_colDamageIndicator);
+            Color renderCol = Color((int)(baseCol.rBase() * 255.f), (int)(baseCol.gBase() * 255.f), (int)(baseCol.bBase() * 255.f), (int)(flAlpha * 255.f));
+            Color shadowCol = Color(0, 0, 0, (int)(flAlpha * 255.f));
+
+            char buf[32];
+            snprintf(buf, sizeof(buf), "-%d", it->m_iDamage);
+
+            // Kattaroq va qalinroq font uchun default emas, balki shunchaki kattalashtiramiz
+            float flFontSize = Fonts::Default->FontSize * 1.5f;
+            ImVec2 textSize = Fonts::Default->CalcTextSizeA(flFontSize, FLT_MAX, 0.0f, buf);
+
+            Draw::AddText(Fonts::Default, flFontSize, ImVec2(vecScreen.x - textSize.x / 2.f, vecScreen.y - textSize.y / 2.f), buf, renderCol, DRAW_TEXT_OUTLINE, shadowCol);
+        }
+
+        ++it;
+    }
+}

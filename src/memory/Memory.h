@@ -97,6 +97,7 @@ public:
 
 	void Initialize(const char* szProcessName)
 	{
+		int iAttempts = 0;
 		while (!m_pProcessID)
 		{
 			PROCESSENTRY32 entry = {};
@@ -109,11 +110,23 @@ public:
 				{
 					m_pProcessID = entry.th32ProcessID;
 					m_pProcessHandle = OpenProcess(PROCESS_VM_READ | PROCESS_VM_WRITE, FALSE, m_pProcessID);
+					if (!m_pProcessHandle)
+					{
+						if (hSnapShot) CloseHandle(hSnapShot);
+						throw std::runtime_error("CS2 ga ulanib bo'lmadi! Iltimos, dasturni Administrator nomidan ishlating.");
+					}
 					break;
 				}
 			}
 			if (hSnapShot)
 				CloseHandle(hSnapShot);
+			
+			iAttempts++;
+			if (iAttempts > 120) // 1 minut kutish (500ms * 120)
+				throw std::runtime_error("CS2 topilmadi. O'yinni yoqib so'ng dasturni ishlating!");
+			
+			if (!m_pProcessID)
+				Sleep(500);
 		}
 	}
 
