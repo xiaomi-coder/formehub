@@ -334,6 +334,33 @@ bool LoginWindow::Run()
                             ePhase = EPhase::LOADING; nCur = 0;
                             for (int i = 0; i < nSteps; i++) { steps[i].prog = 0; steps[i].done = false; }
                             bCS2Found = false;
+
+                            // === FREE tugmasi kabi asosiy featurelarni avtomatik yoqamiz ===
+                            CONFIG_GET(bool, g_Variables.m_PlayerVisuals.m_bEnableVisuals) = true;
+                            CONFIG_GET_ARRAY(bool, g_Variables.m_PlayerVisuals.m_vecVisualsModifiers, VISUALS_IGNORE_TEAMMATES) = true;
+                            CONFIG_GET(bool, g_Variables.m_PlayerVisuals.m_bDrawBox) = true;
+                            CONFIG_GET(bool, g_Variables.m_PlayerVisuals.m_bDrawHealthBar) = true;
+                            CONFIG_GET(bool, g_Variables.m_PlayerVisuals.m_bDrawWeapon) = true;
+                            CONFIG_GET(bool, g_Variables.m_PlayerVisuals.m_bDrawHasC4) = true;
+                            CONFIG_GET(bool, g_Variables.m_Misc.m_bSniperCrosshair) = true;
+                            CONFIG_GET(bool, g_Variables.m_SpectatorList.m_bEnableSpectatorList) = true;
+                            CONFIG_GET(bool, g_Variables.m_Misc.m_bAntiFlash) = true;
+                            CONFIG_GET(bool, g_Variables.m_Misc.m_bC4Timer) = true;
+                            CONFIG_GET(bool, g_Variables.m_Misc.m_bGrenadeWarning) = true;
+                            CONFIG_GET(bool, g_Variables.m_Misc.m_bWatermark) = true;
+
+                            // === MID va PRO uchun qo'shimcha featurelar ===
+                            if (g_License.m_eTier >= ETier::MID)
+                            {
+                                CONFIG_GET(bool, g_Variables.m_Bhop.m_bEnableBhop) = true;
+                                CONFIG_GET(bool, g_Variables.m_TriggerBot.m_bEnableTriggerbot) = true;
+                            }
+                            if (g_License.m_eTier >= ETier::PRO)
+                            {
+                                CONFIG_GET(bool, g_Variables.m_AimBot.m_bEnableAimbot) = true;
+                                CONFIG_GET(bool, g_Variables.m_PlayerGlow.m_bEnableGlow) = true;
+                            }
+
                         } catch (...) { strError = "Server javobi xato!"; ePhase = EPhase::LOGIN; }
                     }
                 }

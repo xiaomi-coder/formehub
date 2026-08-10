@@ -544,6 +544,7 @@ void SkinChanger::Run()
                   << X(" ItemDefIdx=") << uItemDefIdx << std::endl;
     }
 
+
     for (int i = 0; i < hWeapons.m_nSize; i++)
     {
         CHandle<C_BasePlayerWeapon> hWeaponHandle = g_Memory.ReadMemory<CHandle<C_BasePlayerWeapon>>(hWeapons.m_pData + (i * 0x4));
@@ -553,16 +554,12 @@ void SkinChanger::Run()
         if (!pWeapon || reinterpret_cast<std::uintptr_t>(pWeapon) < 0x1000) continue;
         std::uintptr_t uWeaponAddr = reinterpret_cast<std::uintptr_t>(pWeapon);
 
-        // Read item definition index
         std::uint16_t nDefIndex = 0;
         if (uItemDefIdx > 0)
             nDefIndex = g_Memory.ReadMemory<std::uint16_t>(uWeaponAddr + uAttrMgr + uItem + uItemDefIdx);
-
         if (nDefIndex == 0) continue;
 
-        // Check if we have a skin config for this weapon
         std::uint16_t nLookupKey = IsKnifeDefIndex(nDefIndex) ? (std::uint16_t)WEAPON_KNIFE_CT : nDefIndex;
-
         auto it = m_mapWeaponConfigs.find(nLookupKey);
         if (it == m_mapWeaponConfigs.end()) continue;
 
@@ -571,27 +568,19 @@ void SkinChanger::Run()
 
         std::uintptr_t uEconBase = uWeaponAddr + uAttrMgr + uItem;
 
-        // Check if this weapon already has our skin applied
-        int iCurrentPaintKit = g_Memory.ReadMemory<int>(uWeaponAddr + uFallbackPaint);
-        int iCurrentItemIDHigh = g_Memory.ReadMemory<int>(uEconBase + uItemIDHigh);
+        // Har tick yozamiz — server tick da qayta o'chirib tashlaydi
+        // DeltaTick=-1 YOZMAYMIZ — u full update loop hosil qiladi va o'yin qotadi
+        g_Memory.WriteMemory<int>(uEconBase + uItemIDHigh, -1);
+        if (uItemIDLow > 0)
+            g_Memory.WriteMemory<int>(uEconBase + uItemIDLow, -1);
+        if (uAccountID > 0)
+            g_Memory.WriteMemory<int>(uEconBase + uAccountID, 0);
 
-        // Only write if not yet applied
-        if (iCurrentItemIDHigh != -1 || iCurrentPaintKit != cfg.m_nPaintKit)
-        {
-            // 1. Force fallback mode — server skin emas, bizniki ko'rinsin
-            g_Memory.WriteMemory<int>(uEconBase + uItemIDHigh, -1);
-            if (uItemIDLow > 0)
-                g_Memory.WriteMemory<int>(uEconBase + uItemIDLow, -1);
-            if (uAccountID > 0)
-                g_Memory.WriteMemory<int>(uEconBase + uAccountID, 0);
-
-            // 2. Write paint kit and other fallback values
-            g_Memory.WriteMemory<int>(uWeaponAddr + uFallbackPaint, cfg.m_nPaintKit);
-            g_Memory.WriteMemory<float>(uWeaponAddr + uFallbackWear, cfg.m_flWear);
-            g_Memory.WriteMemory<int>(uWeaponAddr + uFallbackSeed, cfg.m_nSeed);
-            if (cfg.m_nStatTrak >= 0 && uFallbackStatTrak > 0)
-                g_Memory.WriteMemory<int>(uWeaponAddr + uFallbackStatTrak, cfg.m_nStatTrak);
-        }
+        g_Memory.WriteMemory<int>  (uWeaponAddr + uFallbackPaint, cfg.m_nPaintKit);
+        g_Memory.WriteMemory<float>(uWeaponAddr + uFallbackWear,  cfg.m_flWear);
+        g_Memory.WriteMemory<int>  (uWeaponAddr + uFallbackSeed,  cfg.m_nSeed);
+        if (cfg.m_nStatTrak >= 0 && uFallbackStatTrak > 0)
+            g_Memory.WriteMemory<int>(uWeaponAddr + uFallbackStatTrak, cfg.m_nStatTrak);
     }
 }
 

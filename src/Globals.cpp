@@ -14,16 +14,16 @@ bool CGlobals::Update()
 	static std::once_flag flag;
 	std::call_once(flag, []()
 	{
-		// Default latest fallback offsets (a2x/cs2-dumper)
-		std::uintptr_t uEntityList = 39120480;
-		std::uintptr_t uViewMatrix = 37393216;
-		std::uintptr_t uLocalPlayerController = 37219232;
-		std::uintptr_t uPlantedC4 = 37152376;
-		std::uintptr_t uGlobalVars = 34143584;
-		std::uintptr_t uCSGOInput = 37459440;
+		// Default latest fallback offsets (a2x/cs2-dumper build latest)
+		std::uintptr_t uEntityList = 39124608;
+		std::uintptr_t uViewMatrix = 37397312;
+		std::uintptr_t uLocalPlayerController = 37223296;
+		std::uintptr_t uPlantedC4 = 37156440;
+		std::uintptr_t uGlobalVars = 34147680;
+		std::uintptr_t uCSGOInput = 37463952;
 		std::uintptr_t uNetworkGameClient = 9491632;
-		std::uintptr_t uEntitySystem = 39120480;
-		std::uintptr_t uSensitivity = 37360168;
+		std::uintptr_t uEntitySystem = 39124608;
+		std::uintptr_t uSensitivity = 37364264;
 
 		// Only use hardcoded fallbacks, disable local json and dynamic download to make it strictly built-in offsets.
 		bool bLoadedLocal = false;
