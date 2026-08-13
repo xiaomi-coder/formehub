@@ -14,16 +14,16 @@ bool CGlobals::Update()
 	static std::once_flag flag;
 	std::call_once(flag, []()
 	{
-		// Default latest fallback offsets (Set B: a2x / as of May 2026)
-		std::uintptr_t uEntityList = 38683872;
-		std::uintptr_t uViewMatrix = 36977328;
-		std::uintptr_t uLocalPlayerController = 36821040;
-		std::uintptr_t uPlantedC4 = 37015304;
-		std::uintptr_t uGlobalVars = 33941200;
-		std::uintptr_t uCSGOInput = 37040528;
-		std::uintptr_t uNetworkGameClient = 9478560;
-		std::uintptr_t uEntitySystem = 38683872;
-		std::uintptr_t uSensitivity = 36944744;
+		// Default latest fallback offsets (a2x/cs2-dumper live — build 6354324)
+		std::uintptr_t uEntityList = 39141456;
+		std::uintptr_t uViewMatrix = 37414224;
+		std::uintptr_t uLocalPlayerController = 37240240;
+		std::uintptr_t uPlantedC4 = 37173400;
+		std::uintptr_t uGlobalVars = 34164024;
+		std::uintptr_t uCSGOInput = 37481248;
+		std::uintptr_t uNetworkGameClient = 9491600;
+		std::uintptr_t uEntitySystem = 39141456;
+		std::uintptr_t uSensitivity = 37381160;
 
 		// Attempt to download the latest offsets dynamically
 		std::cout << X("  [~] Downloading latest CS2 offsets...") << std::endl;

@@ -571,27 +571,22 @@ void SkinChanger::Run()
 
         std::uintptr_t uEconBase = uWeaponAddr + uAttrMgr + uItem;
 
-        // Check if this weapon already has our skin applied
-        int iCurrentPaintKit = g_Memory.ReadMemory<int>(uWeaponAddr + uFallbackPaint);
-        int iCurrentItemIDHigh = g_Memory.ReadMemory<int>(uEconBase + uItemIDHigh);
+        // Har tick yozamiz — server tick da qayta o'chirib tashlaydi
+        // DeltaTick=-1 YOZMAYMIZ — u full update loop hosil qiladi va o'yin qotadi
 
-        // Only write if not yet applied
-        if (iCurrentItemIDHigh != -1 || iCurrentPaintKit != cfg.m_nPaintKit)
-        {
-            // 1. Force fallback mode — server skin emas, bizniki ko'rinsin
-            g_Memory.WriteMemory<int>(uEconBase + uItemIDHigh, -1);
-            if (uItemIDLow > 0)
-                g_Memory.WriteMemory<int>(uEconBase + uItemIDLow, -1);
-            if (uAccountID > 0)
-                g_Memory.WriteMemory<int>(uEconBase + uAccountID, 0);
+        // 1. Force fallback mode — server skin emas, bizniki ko'rinsin
+        g_Memory.WriteMemory<int>(uEconBase + uItemIDHigh, -1);
+        if (uItemIDLow > 0)
+            g_Memory.WriteMemory<int>(uEconBase + uItemIDLow, -1);
+        if (uAccountID > 0)
+            g_Memory.WriteMemory<int>(uEconBase + uAccountID, 0);
 
-            // 2. Write paint kit and other fallback values
-            g_Memory.WriteMemory<int>(uWeaponAddr + uFallbackPaint, cfg.m_nPaintKit);
-            g_Memory.WriteMemory<float>(uWeaponAddr + uFallbackWear, cfg.m_flWear);
-            g_Memory.WriteMemory<int>(uWeaponAddr + uFallbackSeed, cfg.m_nSeed);
-            if (cfg.m_nStatTrak >= 0 && uFallbackStatTrak > 0)
-                g_Memory.WriteMemory<int>(uWeaponAddr + uFallbackStatTrak, cfg.m_nStatTrak);
-        }
+        // 2. Write paint kit and other fallback values
+        g_Memory.WriteMemory<int>  (uWeaponAddr + uFallbackPaint, cfg.m_nPaintKit);
+        g_Memory.WriteMemory<float>(uWeaponAddr + uFallbackWear,  cfg.m_flWear);
+        g_Memory.WriteMemory<int>  (uWeaponAddr + uFallbackSeed,  cfg.m_nSeed);
+        if (cfg.m_nStatTrak >= 0 && uFallbackStatTrak > 0)
+            g_Memory.WriteMemory<int>(uWeaponAddr + uFallbackStatTrak, cfg.m_nStatTrak);
     }
 }
 
