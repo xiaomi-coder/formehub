@@ -150,6 +150,7 @@ void SchemaSystem::ApplyFallbacks()
 	SetIfZero(FNV1A::HashConst("CCSPlayerController->m_hObserverPawn"), 2328);
 	SetIfZero(FNV1A::HashConst("CCSPlayerController->m_sSanitizedPlayerName"), 2152);
 	SetIfZero(FNV1A::HashConst("CCSPlayerController->m_iCompTeammateColor"), 2128);
+	SetIfZero(FNV1A::HashConst("CCSPlayerController->m_bPawnIsAlive"), 2332);
 
 	// CPlayer_ObserverServices - NOT in client.dll schema, MUST have fallback!
 	SetIfZero(FNV1A::HashConst("CPlayer_ObserverServices->m_hObserverTarget"), 76);

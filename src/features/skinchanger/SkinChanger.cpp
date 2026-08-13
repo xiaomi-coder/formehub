@@ -544,6 +544,7 @@ void SkinChanger::Run()
                   << X(" ItemDefIdx=") << uItemDefIdx << std::endl;
     }
 
+
     for (int i = 0; i < hWeapons.m_nSize; i++)
     {
         CHandle<C_BasePlayerWeapon> hWeaponHandle = g_Memory.ReadMemory<CHandle<C_BasePlayerWeapon>>(hWeapons.m_pData + (i * 0x4));
@@ -553,16 +554,12 @@ void SkinChanger::Run()
         if (!pWeapon || reinterpret_cast<std::uintptr_t>(pWeapon) < 0x1000) continue;
         std::uintptr_t uWeaponAddr = reinterpret_cast<std::uintptr_t>(pWeapon);
 
-        // Read item definition index
         std::uint16_t nDefIndex = 0;
         if (uItemDefIdx > 0)
             nDefIndex = g_Memory.ReadMemory<std::uint16_t>(uWeaponAddr + uAttrMgr + uItem + uItemDefIdx);
-
         if (nDefIndex == 0) continue;
 
-        // Check if we have a skin config for this weapon
         std::uint16_t nLookupKey = IsKnifeDefIndex(nDefIndex) ? (std::uint16_t)WEAPON_KNIFE_CT : nDefIndex;
-
         auto it = m_mapWeaponConfigs.find(nLookupKey);
         if (it == m_mapWeaponConfigs.end()) continue;
 

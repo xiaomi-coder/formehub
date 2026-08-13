@@ -439,6 +439,7 @@ public:
         return sBuffer;
     }
 
+    SCHEMA(bool, m_bPawnIsAlive, "CCSPlayerController->m_bPawnIsAlive");
     SCHEMA(CHandle<C_CSPlayerPawn>, m_hPlayerPawn, "CCSPlayerController->m_hPlayerPawn");
     SCHEMA(CHandle<C_CSObserverPawn>, m_hObserverPawn, "CCSPlayerController->m_hObserverPawn");
 };

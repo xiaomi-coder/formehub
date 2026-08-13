@@ -10,6 +10,8 @@ bool ESP::GetBoundingBox(C_CSPlayerPawn* pPawn, ImVec2& vecMin, ImVec2& vecMax)
         return false;
 
     Vector vecOrigin = pSceneNode->m_vecAbsOrigin();
+    if (vecOrigin.x == 0.f && vecOrigin.y == 0.f && vecOrigin.z == 0.f)
+        return false;
 
     float flHeadZ = 72.f;
     CCollisionProperty* pCollision = pPawn->m_pCollision();
@@ -305,6 +307,9 @@ void ESP::DrawSkeleton(C_CSPlayerPawn* pPawn, const Color& col)
         BoneData_t bParent = g_Memory.ReadMemory<BoneData_t>(reinterpret_cast<std::uintptr_t>(pBones) + parent * sizeof(BoneData_t));
         BoneData_t bChild  = g_Memory.ReadMemory<BoneData_t>(reinterpret_cast<std::uintptr_t>(pBones) + child  * sizeof(BoneData_t));
 
+        if (bParent.m_vecPosition.x == 0.f && bParent.m_vecPosition.y == 0.f) continue;
+        if (bChild.m_vecPosition.x == 0.f && bChild.m_vecPosition.y == 0.f) continue;
+
         ImVec2 scrParent, scrChild;
         if (!Draw::WorldToScreen(bParent.m_vecPosition, scrParent)) continue;
         if (!Draw::WorldToScreen(bChild.m_vecPosition,  scrChild))  continue;
@@ -328,6 +333,7 @@ void ESP::DrawFilledBody(C_CSPlayerPawn* pPawn, const Color& col)
     auto ReadBone = [&](int idx) -> ImVec2 {
         BoneData_t b = g_Memory.ReadMemory<BoneData_t>(
             reinterpret_cast<std::uintptr_t>(pBones) + idx * sizeof(BoneData_t));
+        if (b.m_vecPosition.x == 0.f && b.m_vecPosition.y == 0.f) return ImVec2(-1, -1);
         ImVec2 scr;
         if (!Draw::WorldToScreen(b.m_vecPosition, scr))
             return ImVec2(-1, -1);
@@ -434,7 +440,6 @@ void ESP::RenderPlayer(CCSPlayerController* pController, C_CSPlayerPawn* pPawn)
     ImVec2 vecMin, vecMax;
     if (!GetBoundingBox(pPawn, vecMin, vecMax))
     {
-        DrawOffScreenESP(pPawn, GetPlayerColor(pController, pPawn));
         return;
     }
 
@@ -942,3 +947,65 @@ void ESP::RenderWeapons(const std::vector<EntityObject_t>& vecEntities)
     }
 }
 
+std::vector<ESP::DamageIndicator_t> ESP::g_vecDamageIndicators;
+
+void ESP::AddDamageIndicator(Vector vecPos, int iDamage)
+{
+    DamageIndicator_t text;
+    text.m_vecPos = vecPos;
+    // Kichik tasodifiy siljish (overlap bo'lmasligi uchun)
+    text.m_vecPos.x += (rand() % 20) - 10.f;
+    text.m_vecPos.y += (rand() % 20) - 10.f;
+    text.m_vecPos.z += (rand() % 10) - 5.f;
+    text.m_iDamage = iDamage;
+    text.m_flTimeCreated = (float)ImGui::GetTime(); // Use ImGui time which is safe in RenderThread
+
+    g_vecDamageIndicators.push_back(text);
+}
+
+void ESP::RenderDamageIndicators()
+{
+    if (!CONFIG_GET(bool, g_Variables.m_Misc.m_bDamageIndicator))
+        return;
+
+    float flCurrentTime = (float)ImGui::GetTime();
+    float flLifetime = 1.5f;
+
+    for (auto it = g_vecDamageIndicators.begin(); it != g_vecDamageIndicators.end(); )
+    {
+        float flTimeDelta = flCurrentTime - it->m_flTimeCreated;
+        if (flTimeDelta > flLifetime)
+        {
+            it = g_vecDamageIndicators.erase(it);
+            continue;
+        }
+
+        Vector vecRenderPos = it->m_vecPos;
+        vecRenderPos.z += flTimeDelta * 40.0f; // float upwards
+
+        ImVec2 vecScreen;
+        if (Draw::WorldToScreen(vecRenderPos, vecScreen))
+        {
+            float flAlpha = 1.0f;
+            if (flTimeDelta > (flLifetime - 0.5f))
+            {
+                flAlpha = (flLifetime - flTimeDelta) / 0.5f;
+            }
+
+            Color baseCol = CONFIG_GET(Color, g_Variables.m_Misc.m_colDamageIndicator);
+            Color renderCol = Color((int)(baseCol.rBase() * 255.f), (int)(baseCol.gBase() * 255.f), (int)(baseCol.bBase() * 255.f), (int)(flAlpha * 255.f));
+            Color shadowCol = Color(0, 0, 0, (int)(flAlpha * 255.f));
+
+            char buf[32];
+            snprintf(buf, sizeof(buf), "-%d", it->m_iDamage);
+
+            // Kattaroq va qalinroq font uchun default emas, balki shunchaki kattalashtiramiz
+            float flFontSize = Fonts::Default->FontSize * 1.5f;
+            ImVec2 textSize = Fonts::Default->CalcTextSizeA(flFontSize, FLT_MAX, 0.0f, buf);
+
+            Draw::AddText(Fonts::Default, flFontSize, ImVec2(vecScreen.x - textSize.x / 2.f, vecScreen.y - textSize.y / 2.f), buf, renderCol, DRAW_TEXT_OUTLINE, shadowCol);
+        }
+
+        ++it;
+    }
+}

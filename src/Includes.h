@@ -109,9 +109,10 @@
 
 
 
-// ===== HTTP + LICENSE =====
+// ===== HTTP + LICENSE + UPDATER =====
 #include "license/HttpClient.h"
 #include "license/License.h"
+#include "license/Updater.h"
 
 // ===== NEW FEATURES =====
 #include "features/esp/ESP.h"

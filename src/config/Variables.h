@@ -91,6 +91,7 @@ public:
 		CONFIG_ADD_VARIABLE(bool, m_bDrawHeadDot,    false);
 		CONFIG_ADD_VARIABLE(bool, m_bDrawSnaplines,  false);
 		CONFIG_ADD_VARIABLE(bool, m_bDrawHasC4,      true);
+		CONFIG_ADD_VARIABLE(bool, m_bDrawOffScreen,  true); // <-- Off-Screen ESP toggle
 
 		CONFIG_ADD_VARIABLE(Color, m_colEnemyVisible,  Color(0,   255, 50,  255));
 		CONFIG_ADD_VARIABLE(Color, m_colEnemyOccluded, Color(0,   180, 30,  200));
@@ -131,6 +132,10 @@ public:
 		// V2.0 Custom Sounds
 		CONFIG_ADD_VARIABLE(bool,  m_bKillSound,       false);  // O'ldirganda alohida ovoz
 		CONFIG_ADD_VARIABLE(float, m_flSoundVolume,    80.0f);  // Ovoz balandligi (0-100)
+		
+		// 3D Damage Indicator
+		CONFIG_ADD_VARIABLE(bool,  m_bDamageIndicator, false);
+		CONFIG_ADD_VARIABLE(Color, m_colDamageIndicator, Color(255, 50, 50, 255));
 	}; MiscVariables_t m_Misc;
 
 	// ================== RCS ==========================

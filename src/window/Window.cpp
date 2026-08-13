@@ -283,7 +283,7 @@ bool Window::Render()
 
         // overlay with vsync example
         // m_pSwapChain->Present(1U, 0U);
-        m_pSwapChain->Present(0U, DXGI_PRESENT_DO_NOT_WAIT);   
+        m_pSwapChain->Present(0U, 0U);
     }
 
     if (!bRunning)
