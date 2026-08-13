@@ -904,6 +904,45 @@ void Gui::Render()
                     ImGui::Spacing();
 
                     // ============================================================
+                    // DIAGNOSTIKA — nima uchun skin tushmayotganini ko'rsatadi
+                    // ============================================================
+                    if (ImGui::CollapsingHeader(X("DEBUG (diagnostika)")))
+                    {
+                        const SkinChanger::SkinDebug_t& d = SkinChanger::m_Debug;
+                        const char* szStage = "?";
+                        switch (d.m_nStage)
+                        {
+                        case 0: szStage = "0: o'chirilgan"; break;
+                        case 1: szStage = "1: LocalPawn YO'Q"; break;
+                        case 2: szStage = "2: O'lgan (dead)"; break;
+                        case 3: szStage = "3: WeaponServices YO'Q"; break;
+                        case 4: szStage = "4: Qurollar ro'yxati bo'sh/xato"; break;
+                        case 5: szStage = "5: Schema offset topilmadi"; break;
+                        case 6: szStage = "6: ISHLAYAPTI (OK)"; break;
+                        default: szStage = "-1: hali chaqirilmagan"; break;
+                        }
+                        ImGui::Text("Bosqich: %s", szStage);
+                        ImGui::Text("Qurollar: %d | Yozildi: %d", d.m_nWeaponCount, d.m_nWrittenCount);
+                        ImGui::Text("Offsets: AttrMgr=%u Item=%u Paint=%u DefIdx=%u",
+                                    d.m_uOffAttrMgr, d.m_uOffItem, d.m_uOffPaint, d.m_uOffDefIdx);
+                        ImGui::Separator();
+                        for (int i = 0; i < d.m_nWeaponsLogged; i++)
+                        {
+                            const SkinChanger::SkinDebugWeapon_t& w = d.m_Weapons[i];
+                            ImGui::Text("def=%u  paint=%d  config=%s  yozildi=%s",
+                                        w.m_nDefIndex, w.m_nPaintKit,
+                                        w.m_bConfigFound ? "HA" : "yo'q",
+                                        w.m_bWritten ? "HA" : "yo'q");
+                            if (w.m_bWritten)
+                                ImGui::Text("      oldingi: paint=%d  IDHigh=%d",
+                                            w.m_nPrevPaint, w.m_nPrevIDHigh);
+                        }
+                        ImGui::Spacing();
+                        ImGui::Separator();
+                        ImGui::Spacing();
+                    }
+
+                    // ============================================================
                     // KNIFE SKINS — Maxsus bo'lim (V2.0)
                     // ============================================================
                     ImGui::PushStyleColor(ImGuiCol_Text, C(255, 200, 50));

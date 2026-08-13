@@ -489,19 +489,18 @@ static std::uintptr_t ResolveSchemaOffset(std::initializer_list<const char*> nam
 // -----------------------------------------------------------------------
 void SkinChanger::Run()
 {
-    if (!m_bEnabled) return;
+    if (!m_bEnabled) { m_Debug.m_nStage = 0; return; }
 
     C_CSPlayerPawn* pLocalPawn = g_Globals.m_LocalPlayer.m_pPlayerPawn;
-    if (!pLocalPawn) return;
+    if (!pLocalPawn || reinterpret_cast<std::uintptr_t>(pLocalPawn) < 0x10000) { m_Debug.m_nStage = 1; return; }
 
-    if (reinterpret_cast<std::uintptr_t>(pLocalPawn) < 0x10000) return;
-    if (!pLocalPawn->IsAlive()) return;
+    if (!pLocalPawn->IsAlive()) { m_Debug.m_nStage = 2; return; }
 
     CCSPlayer_WeaponServices* pWeaponServices = pLocalPawn->m_pWeaponServices();
-    if (!pWeaponServices || reinterpret_cast<std::uintptr_t>(pWeaponServices) < 0x1000) return;
+    if (!pWeaponServices || reinterpret_cast<std::uintptr_t>(pWeaponServices) < 0x1000) { m_Debug.m_nStage = 3; return; }
 
     C_NetworkUtlVectorBaseSimple hWeapons = pWeaponServices->m_hMyWeapons();
-    if (hWeapons.m_nSize <= 0 || hWeapons.m_nSize > 16 || hWeapons.m_pData < 0x1000) return;
+    if (hWeapons.m_nSize <= 0 || hWeapons.m_nSize > 16 || hWeapons.m_pData < 0x1000) { m_Debug.m_nStage = 4; return; }
 
     // V2.0: SchemaSystem dan DINAMIK offset olish — CS2 update bo'lsa ham ishlaydi!
     static std::uintptr_t uAttrMgr       = 0;
@@ -514,6 +513,8 @@ void SkinChanger::Run()
     static std::uintptr_t uFallbackWear   = 0;
     static std::uintptr_t uFallbackStatTrak = 0;
     static std::uintptr_t uAccountID      = 0;
+    static std::uintptr_t uInitialized    = 0;   // C_EconItemView->m_bInitialized
+    static std::uintptr_t uItemID         = 0;   // C_EconItemView->m_iItemID
     static bool bOffsetsResolved = false;
 
     if (!bOffsetsResolved)
@@ -528,10 +529,13 @@ void SkinChanger::Run()
         uFallbackWear      = ResolveSchemaOffset({"C_EconEntity->m_flFallbackWear"});
         uFallbackStatTrak  = ResolveSchemaOffset({"C_EconEntity->m_nFallbackStatTrak"});
         uAccountID         = ResolveSchemaOffset({"C_EconItemView->m_iAccountID"});
+        uInitialized       = ResolveSchemaOffset({"C_EconItemView->m_bInitialized"});
+        uItemID            = ResolveSchemaOffset({"C_EconItemView->m_iItemID"});
 
         // Agar hech biri topilmagan bo'lsa — ishga tushirmaymiz
         if (uAttrMgr == 0 || uItem == 0 || uFallbackPaint == 0 || uItemDefIdx == 0)
         {
+            m_Debug.m_nStage = 5;
             std::cout << X("  [SKIN] Schema offsets topilmadi! SkinChanger ishlamaydi.") << std::endl;
             return;
         }
@@ -544,6 +548,16 @@ void SkinChanger::Run()
                   << X(" ItemDefIdx=") << uItemDefIdx << std::endl;
     }
 
+    // --- diagnostics snapshot ---
+    m_Debug.m_nStage           = 6;
+    m_Debug.m_bOffsetsResolved = true;
+    m_Debug.m_uOffAttrMgr      = (std::uint32_t)uAttrMgr;
+    m_Debug.m_uOffItem         = (std::uint32_t)uItem;
+    m_Debug.m_uOffPaint        = (std::uint32_t)uFallbackPaint;
+    m_Debug.m_uOffDefIdx       = (std::uint32_t)uItemDefIdx;
+    m_Debug.m_nWeaponCount     = hWeapons.m_nSize;
+    m_Debug.m_nWrittenCount    = 0;
+    m_Debug.m_nWeaponsLogged   = 0;
 
     for (int i = 0; i < hWeapons.m_nSize; i++)
     {
@@ -561,12 +575,31 @@ void SkinChanger::Run()
 
         std::uint16_t nLookupKey = IsKnifeDefIndex(nDefIndex) ? (std::uint16_t)WEAPON_KNIFE_CT : nDefIndex;
         auto it = m_mapWeaponConfigs.find(nLookupKey);
-        if (it == m_mapWeaponConfigs.end()) continue;
+
+        // log this weapon for diagnostics
+        SkinDebugWeapon_t dbg{};
+        dbg.m_nDefIndex    = nDefIndex;
+        dbg.m_bConfigFound = (it != m_mapWeaponConfigs.end());
+        dbg.m_nPaintKit    = dbg.m_bConfigFound ? it->second.m_nPaintKit : 0;
+
+        if (it == m_mapWeaponConfigs.end())
+        {
+            if (m_Debug.m_nWeaponsLogged < 16) m_Debug.m_Weapons[m_Debug.m_nWeaponsLogged++] = dbg;
+            continue;
+        }
 
         WeaponSkinConfig_t& cfg = it->second;
-        if (cfg.m_nPaintKit == 0) continue;
+        if (cfg.m_nPaintKit == 0)
+        {
+            if (m_Debug.m_nWeaponsLogged < 16) m_Debug.m_Weapons[m_Debug.m_nWeaponsLogged++] = dbg;
+            continue;
+        }
 
         std::uintptr_t uEconBase = uWeaponAddr + uAttrMgr + uItem;
+
+        // Diagnostika: yozishdan OLDIN o'qiymiz — o'yin qiymatni qaytaryaptimi?
+        dbg.m_nPrevPaint  = g_Memory.ReadMemory<int>(uWeaponAddr + uFallbackPaint);
+        dbg.m_nPrevIDHigh = g_Memory.ReadMemory<int>(uEconBase + uItemIDHigh);
 
         // Har tick yozamiz — server tick da qayta o'chirib tashlaydi
         // DeltaTick=-1 YOZMAYMIZ — u full update loop hosil qiladi va o'yin qotadi
@@ -575,8 +608,15 @@ void SkinChanger::Run()
         g_Memory.WriteMemory<int>(uEconBase + uItemIDHigh, -1);
         if (uItemIDLow > 0)
             g_Memory.WriteMemory<int>(uEconBase + uItemIDLow, -1);
+        if (uItemID > 0)
+            g_Memory.WriteMemory<std::int64_t>(uEconBase + uItemID, -1);
         if (uAccountID > 0)
             g_Memory.WriteMemory<int>(uEconBase + uAccountID, 0);
+
+        // 1b. m_bInitialized = true — o'yin item'ni "custom" deb qabul qilib,
+        //     fallback skinni render qiladi (haqiqiy skin/stiker o'rniga)
+        if (uInitialized > 0)
+            g_Memory.WriteMemory<bool>(uEconBase + uInitialized, true);
 
         // 2. Write paint kit and other fallback values
         g_Memory.WriteMemory<int>  (uWeaponAddr + uFallbackPaint, cfg.m_nPaintKit);
@@ -584,6 +624,10 @@ void SkinChanger::Run()
         g_Memory.WriteMemory<int>  (uWeaponAddr + uFallbackSeed,  cfg.m_nSeed);
         if (cfg.m_nStatTrak >= 0 && uFallbackStatTrak > 0)
             g_Memory.WriteMemory<int>(uWeaponAddr + uFallbackStatTrak, cfg.m_nStatTrak);
+
+        dbg.m_bWritten = true;
+        m_Debug.m_nWrittenCount++;
+        if (m_Debug.m_nWeaponsLogged < 16) m_Debug.m_Weapons[m_Debug.m_nWeaponsLogged++] = dbg;
     }
 }
 

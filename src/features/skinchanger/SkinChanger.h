@@ -132,5 +132,34 @@ namespace SkinChanger
     inline std::unordered_map<std::uint16_t, WeaponSkinConfig_t> m_mapWeaponConfigs;
 
     // Master enable
-    inline bool m_bEnabled = false;
+    inline bool m_bEnabled = true;
+
+    // -------------------------------------------------------------------
+    // Diagnostics — populated by Run() every tick, shown in the GUI so we
+    // can see exactly where/why skin application fails on a live game.
+    // -------------------------------------------------------------------
+    struct SkinDebugWeapon_t
+    {
+        std::uint16_t m_nDefIndex   = 0;
+        int           m_nPaintKit   = 0;
+        bool          m_bConfigFound = false;
+        bool          m_bWritten     = false;
+        // Read BEFORE our write this tick — shows if the game reverts our value
+        int           m_nPrevPaint  = 0;   // m_nFallbackPaintKit before write
+        int           m_nPrevIDHigh = 0;   // m_iItemIDHigh before write
+    };
+
+    struct SkinDebug_t
+    {
+        // stage: 0=disabled 1=no pawn 2=dead 3=no weaponServices 4=bad weapon list
+        //        5=offsets missing 6=running OK
+        int           m_nStage = -1;
+        bool          m_bOffsetsResolved = false;
+        std::uint32_t m_uOffAttrMgr = 0, m_uOffItem = 0, m_uOffPaint = 0, m_uOffDefIdx = 0;
+        int           m_nWeaponCount = 0;
+        int           m_nWrittenCount = 0;
+        SkinDebugWeapon_t m_Weapons[16] = {};
+        int           m_nWeaponsLogged = 0;
+    };
+    inline SkinDebug_t m_Debug;
 }

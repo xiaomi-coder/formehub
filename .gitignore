@@ -23,6 +23,18 @@ ipch/
 key.txt
 default.json
 
+# Epstein internal module — vendored third-party trees and generated dumps.
+# These came in wholesale when the module was copied from D:\cs2-newww and are
+# not our code: imgui and minhook ship their own .github/, .editorconfig and
+# .gitattributes, which is where the bulk of the noise came from. Re-copy them
+# from the original module folder if the tree is ever cloned fresh.
+src/internal/EpsteinModule/imgui-master/
+src/internal/EpsteinModule/minhook-master/
+src/internal/EpsteinModule/sdk/
+src/internal/EpsteinModule/*.jpg
+src/internal/EpsteinModule/*.png
+src/internal/EpsteinModule/epstein.log
+
 # OS
 Thumbs.db
 Desktop.ini

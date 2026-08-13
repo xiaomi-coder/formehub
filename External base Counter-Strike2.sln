@@ -5,6 +5,10 @@ VisualStudioVersion = 18.0.11111.16
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "External base Counter-Strike 2", "External base Counter-Strike2.vcxproj", "{C1C47DD6-0DC8-43B7-BF90-F4FC02FCFA2E}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SkinCore", "SkinCore.vcxproj", "{9F2A41C7-5B6D-4A10-8E33-11A0C5D47E01}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SkinLoader", "SkinLoader.vcxproj", "{3D6B8E94-7C21-4F55-B0A9-22B7E6F38C02}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -15,6 +19,14 @@ Global
 		{C1C47DD6-0DC8-43B7-BF90-F4FC02FCFA2E}.Debug|x64.Build.0 = Debug|x64
 		{C1C47DD6-0DC8-43B7-BF90-F4FC02FCFA2E}.Release|x64.ActiveCfg = Release|x64
 		{C1C47DD6-0DC8-43B7-BF90-F4FC02FCFA2E}.Release|x64.Build.0 = Release|x64
+		{9F2A41C7-5B6D-4A10-8E33-11A0C5D47E01}.Debug|x64.ActiveCfg = Debug|x64
+		{9F2A41C7-5B6D-4A10-8E33-11A0C5D47E01}.Debug|x64.Build.0 = Debug|x64
+		{9F2A41C7-5B6D-4A10-8E33-11A0C5D47E01}.Release|x64.ActiveCfg = Release|x64
+		{9F2A41C7-5B6D-4A10-8E33-11A0C5D47E01}.Release|x64.Build.0 = Release|x64
+		{3D6B8E94-7C21-4F55-B0A9-22B7E6F38C02}.Debug|x64.ActiveCfg = Debug|x64
+		{3D6B8E94-7C21-4F55-B0A9-22B7E6F38C02}.Debug|x64.Build.0 = Debug|x64
+		{3D6B8E94-7C21-4F55-B0A9-22B7E6F38C02}.Release|x64.ActiveCfg = Release|x64
+		{3D6B8E94-7C21-4F55-B0A9-22B7E6F38C02}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
