@@ -2,6 +2,10 @@
 #include <json.hpp>
 using json = nlohmann::json;
 
+// =====================================================================
+//  SHIFTHUB  ::  CYBERPUNK LOGIN / LOADER
+// =====================================================================
+
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 static bool s_bDrag = false;
@@ -42,10 +46,22 @@ static bool IsCS2Running()
 }
 
 // ===================================================================
+static ImFont* LoginFont(ImGuiIO& io, const char* const* paths, int n, float size, ImFontConfig* cfg, const ImWchar* ranges)
+{
+    for (int i = 0; i < n; i++)
+    {
+        std::error_code ec;
+        if (!std::filesystem::exists(paths[i], ec)) continue;
+        if (ImFont* f = io.Fonts->AddFontFromFileTTF(paths[i], size, cfg, ranges))
+            return f;
+    }
+    return io.Fonts->AddFontDefault();
+}
+
 bool LoginWindow::Create()
 {
     if (m_bInitialized) return true;
-    int wndW = 480, wndH = 580;
+    int wndW = 520, wndH = 620;
     int scrW = GetSystemMetrics(SM_CXSCREEN), scrH = GetSystemMetrics(SM_CYSCREEN);
 
     m_wc = {};
@@ -87,9 +103,23 @@ bool LoginWindow::Create()
 
     ImGuiIO& io = ImGui::GetIO();
     io.IniFilename = nullptr; // Disable imgui.ini generation
+
+    static const char* const kBody[] = { "C:\\Windows\\Fonts\\segoeui.ttf",  "C:\\Windows\\Fonts\\Verdana.ttf" };
+    static const char* const kBold[] = { "C:\\Windows\\Fonts\\segoeuib.ttf", "C:\\Windows\\Fonts\\Verdanab.ttf", "C:\\Windows\\Fonts\\segoeui.ttf" };
+    static const char* const kMono[] = { "C:\\Windows\\Fonts\\consola.ttf",  "C:\\Windows\\Fonts\\cour.ttf" };
+
+    const ImWchar* ranges = UI::GlyphRanges();
+
     ImFontConfig cfg = {};
-    cfg.FontBuilderFlags = ImGuiFreeTypeBuilderFlags_LightHinting | ImGuiFreeTypeBuilderFlags_Bold;
-    io.Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\Verdana.ttf", 16, &cfg, io.Fonts->GetGlyphRangesCyrillic());
+    cfg.FontBuilderFlags = ImGuiFreeTypeBuilderFlags_LightHinting;
+    ImFontConfig cfgB = {};
+    cfgB.FontBuilderFlags = ImGuiFreeTypeBuilderFlags_LightHinting | ImGuiFreeTypeBuilderFlags_Bold;
+
+    Fonts::Default = LoginFont(io, kBody, IM_ARRAYSIZE(kBody), 16.f, &cfg,  ranges);
+    Fonts::Small   = LoginFont(io, kBody, IM_ARRAYSIZE(kBody), 12.f, &cfg,  ranges);
+    Fonts::Title   = LoginFont(io, kBold, IM_ARRAYSIZE(kBold), 34.f, &cfgB, ranges);
+    Fonts::Mono    = LoginFont(io, kMono, IM_ARRAYSIZE(kMono), 13.f, &cfgB, ranges);
+
     ImGuiFreeType::BuildFontAtlas(io.Fonts, 0);
 
     m_bInitialized = true;
@@ -97,38 +127,98 @@ bool LoginWindow::Create()
 }
 
 // ===================================================================
-static void ApplyTheme()
+//  Local drawing helpers
+// ===================================================================
+static void CenteredText(ImDrawList* dl, float W, float y, const char* txt, ImU32 col, ImFont* font = nullptr)
 {
-    ImGuiStyle& s = ImGui::GetStyle();
-    s.WindowRounding = 0; s.FrameRounding = 4; s.GrabRounding = 3;
-    s.WindowBorderSize = 0; s.FrameBorderSize = 1;
-    s.ItemSpacing = { 8, 8 }; s.FramePadding = { 10, 8 };
-    auto* c = s.Colors;
-    c[ImGuiCol_WindowBg]       = { 0.04f, 0.05f, 0.08f, 1.0f };
-    c[ImGuiCol_FrameBg]        = { 0.07f, 0.09f, 0.13f, 1.0f };
-    c[ImGuiCol_FrameBgHovered] = { 0.09f, 0.12f, 0.17f, 1.0f };
-    c[ImGuiCol_FrameBgActive]  = { 0.0f,  0.5f,  0.2f,  0.3f };
-    c[ImGuiCol_Border]         = { 0.0f,  0.45f, 0.18f, 0.5f };
-    c[ImGuiCol_Text]           = { 0.85f, 0.95f, 0.88f, 1.0f };
-    c[ImGuiCol_TextDisabled]   = { 0.30f, 0.42f, 0.35f, 1.0f };
-    c[ImGuiCol_Button]         = { 0.0f,  0.42f, 0.16f, 1.0f };
-    c[ImGuiCol_ButtonHovered]  = { 0.0f,  0.58f, 0.22f, 1.0f };
-    c[ImGuiCol_ButtonActive]   = { 0.0f,  0.72f, 0.28f, 1.0f };
-    c[ImGuiCol_CheckMark]      = { 0.0f,  1.0f,  0.35f, 1.0f };
+    if (font) ImGui::PushFont(font);
+    ImVec2 ts = ImGui::CalcTextSize(txt);
+    dl->AddText(ImVec2((W - ts.x) * 0.5f, y), col, txt);
+    if (font) ImGui::PopFont();
+}
+
+// Animated background: grid + drifting data streaks + scanlines + vignette
+static void DrawBackdrop(ImDrawList* dl, float W, float H, float flTime)
+{
+    dl->AddRectFilledMultiColor(ImVec2(0, 0), ImVec2(W, H),
+        IM_COL32(8, 11, 18, 255), IM_COL32(8, 11, 18, 255),
+        IM_COL32(4, 6, 11, 255),  IM_COL32(6, 5, 12, 255));
+
+    // perspective-ish grid
+    UI::Grid(dl, ImVec2(0, 0), ImVec2(W, H), IM_COL32(34, 226, 255, 8), 26.f);
+
+    // drifting vertical data streaks
+    for (int i = 0; i < 7; i++)
+    {
+        float x  = fmodf(37.f + (float)i * 71.f, W);
+        float sp = 40.f + (float)((i * 37) % 60);
+        float y  = fmodf(flTime * sp + (float)i * 90.f, H + 160.f) - 160.f;
+        ImU32 c  = (i % 3 == 0) ? UI::COL_MAGENTA : UI::COL_CYAN;
+        dl->AddRectFilledMultiColor(ImVec2(x, y), ImVec2(x + 1.f, y + 150.f),
+            UI::Fade(c, 0.f), UI::Fade(c, 0.f), UI::Fade(c, 0.22f), UI::Fade(c, 0.22f));
+    }
+
+    // scanlines + top/bottom neon frame
+    UI::Scanlines(dl, ImVec2(0, 0), ImVec2(W, H), IM_COL32(0, 0, 0, 26), 3.f);
+
+    dl->AddRectFilledMultiColor(ImVec2(0, 0), ImVec2(W, 3.f),
+        UI::COL_CYAN, UI::COL_MAGENTA, UI::COL_MAGENTA, UI::COL_CYAN);
+
+    dl->AddRect(ImVec2(1, 1), ImVec2(W - 1, H - 1), UI::Fade(UI::COL_CYAN, 0.35f), 0.f, 0, 1.f);
+    UI::Brackets(dl, ImVec2(6, 6), ImVec2(W - 6, H - 6), UI::COL_CYAN, 22.f, 1.8f);
 }
 
 // ===================================================================
+// ---------------------------------------------------------------------
+// Login/FREE dan keyin tier ga qarab standart funksiyalarni yoqish.
+// LITE hammaga ochiq; MID/PRO faqat server bergan tier bo'yicha.
+// ---------------------------------------------------------------------
+static void ApplyTierDefaults()
+{
+    // --- LITE (hammaga) ---
+    CONFIG_GET(bool, g_Variables.m_PlayerVisuals.m_bEnableVisuals) = true;
+    CONFIG_GET_ARRAY(bool, g_Variables.m_PlayerVisuals.m_vecVisualsModifiers,
+                     VISUALS_IGNORE_TEAMMATES) = true;
+    CONFIG_GET(bool, g_Variables.m_PlayerVisuals.m_bDrawBox) = true;
+    CONFIG_GET(bool, g_Variables.m_PlayerVisuals.m_bDrawHealthBar) = true;
+    CONFIG_GET(bool, g_Variables.m_PlayerVisuals.m_bDrawWeapon) = true;
+    CONFIG_GET(bool, g_Variables.m_PlayerVisuals.m_bDrawHasC4) = true;
+    CONFIG_GET(bool, g_Variables.m_Misc.m_bSniperCrosshair) = true;
+    CONFIG_GET(bool, g_Variables.m_SpectatorList.m_bEnableSpectatorList) = true;
+    CONFIG_GET(bool, g_Variables.m_Misc.m_bAntiFlash) = true;
+    CONFIG_GET(bool, g_Variables.m_Misc.m_bC4Timer) = true;
+    CONFIG_GET(bool, g_Variables.m_Misc.m_bGrenadeWarning) = true;
+    CONFIG_GET(bool, g_Variables.m_Misc.m_bWatermark) = true;
+    CONFIG_GET(bool, g_Variables.m_PlayerGlow.m_bEnableGlow) = true;   // FREE ga kiradi
+
+    // --- MID ---
+    if (g_License.HasFeature(ETier::MID))
+    {
+        CONFIG_GET(bool, g_Variables.m_Bhop.m_bEnableBhop) = true;
+        CONFIG_GET(bool, g_Variables.m_TriggerBot.m_bEnableTriggerbot) = true;
+    }
+
+    // --- PRO ---
+    if (g_License.HasFeature(ETier::PRO))
+    {
+        CONFIG_GET(bool, g_Variables.m_AimBot.m_bEnableAimbot) = true;
+    }
+}
+
 enum class EPhase { LOGIN, CONNECTING, LOADING, READY, DONE };
 
 bool LoginWindow::Run()
 {
     if (!m_bInitialized) return false;
-    ApplyTheme();
+    UI::ApplyTheme();
 
     EPhase ePhase = EPhase::LOGIN;
-    char szUser[64] = "", szPass[64] = "";
+    float flPulse = 0.f;
+
+    // Login form state
+    char        szUser[64] = "", szPass[64] = "";
     std::string strError;
-    float flTimer = 0.f, flPulse = 0.f;
+    float       flTimer = 0.f;
 
     // Loading steps
     struct Step {
@@ -137,9 +227,9 @@ bool LoginWindow::Run()
         float prog; bool done;
     };
     Step steps[] = {
-        { "Litsenziyani tekshirish",  "[1/3]", 0, false },
-        { "Counter-Strike 2",         "[2/3]", 0, false },
-        { "Dasturni sozlash",         "[3/3]", 0, false },
+        { "Tizimni tekshirish",       "01", 0, false },
+        { "Counter-Strike 2",         "02", 0, false },
+        { "Dasturni sozlash",         "03", 0, false },
     };
     int nSteps = 3, nCur = 0;
     bool bCS2Found = false;
@@ -167,338 +257,320 @@ bool LoginWindow::Run()
 
         ImGui::SetNextWindowPos({ 0, 0 });
         ImGui::SetNextWindowSize(io.DisplaySize);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.f, 0.f));
         ImGui::Begin("##Main", nullptr,
             ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
             ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar |
-            ImGuiWindowFlags_NoCollapse);
+            ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoCollapse);
 
         ImDrawList* dl = ImGui::GetWindowDrawList();
+        DrawBackdrop(dl, W, H, flPulse);
 
-        // === GREEN TOP ACCENT ===
-        dl->AddRectFilled({ 0, 0 }, { W, 3 }, IM_COL32(0, 200, 65, 255));
-
-        // === X BUTTON (top-right) ===
+        // === CLOSE BUTTON ===
         {
-            ImGui::SetCursorPos({ W - 35, 8 });
-            ImGui::PushStyleColor(ImGuiCol_Button, { 0, 0, 0, 0 });
-            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, { 0.3f, 0.1f, 0.1f, 0.5f });
-            ImGui::PushStyleColor(ImGuiCol_ButtonActive, { 0.5f, 0.1f, 0.1f, 0.8f });
-            ImGui::PushStyleColor(ImGuiCol_Text, { 0.5f, 0.5f, 0.5f, 1.0f });
-            if (ImGui::Button("X", { 25, 25 })) exit(0);
-            ImGui::PopStyleColor(4);
+            ImGui::SetCursorPos({ W - 38.f, 12.f });
+            ImGui::InvisibleButton("##close", { 26.f, 26.f });
+            bool hov = ImGui::IsItemHovered();
+            if (ImGui::IsItemClicked()) exit(0);
+            ImVec2 mn = ImGui::GetItemRectMin(), mx = ImGui::GetItemRectMax();
+            if (hov)
+            {
+                dl->AddRectFilled(mn, mx, UI::Fade(UI::COL_RED, 0.18f), 3.f);
+                dl->AddRect(mn, mx, UI::Fade(UI::COL_RED, 0.7f), 3.f, 0, 1.f);
+            }
+            ImU32 colX = hov ? UI::COL_RED : UI::COL_TEXT_FAINT;
+            dl->AddLine({ mn.x + 8.f, mn.y + 8.f }, { mx.x - 8.f, mx.y - 8.f }, colX, 1.6f);
+            dl->AddLine({ mx.x - 8.f, mn.y + 8.f }, { mn.x + 8.f, mx.y - 8.f }, colX, 1.6f);
         }
 
         // ===============================================================
-        //  LOGIN SCREEN
+        //  LOGIN  —  POST {m_strApiUrl}/api/auth/login
+        //  Server javobidagi tier (free/mid/pro) huquqlarni belgilaydi.
         // ===============================================================
         if (ePhase == EPhase::LOGIN || ePhase == EPhase::CONNECTING)
         {
-            float fW = 340.f, fX = (W - fW) * 0.5f;
+            const float fW = 360.f, fX = (W - fW) * 0.5f;
+            const bool  bBusy = (ePhase == EPhase::CONNECTING);
 
-            // Header
-            ImGui::SetCursorPosY(30);
+            // --- logo mark ---
             {
-                const char* t = "S H I F T H U B";
-                ImGui::SetCursorPosX((W - ImGui::CalcTextSize(t).x) * 0.5f);
-                ImGui::PushStyleColor(ImGuiCol_Text, { 0.0f, 0.85f, 0.30f, 1.0f });
-                ImGui::Text("%s", t);
-                ImGui::PopStyleColor();
-            }
-            {
-                char szSub[64];
-                snprintf(szSub, sizeof(szSub), "Professional CS2 Software  |  v%s", SHIFTHUB_VERSION);
-                const char* t = szSub;
-                ImGui::SetCursorPosX((W - ImGui::CalcTextSize(t).x) * 0.5f);
-                ImGui::PushStyleColor(ImGuiCol_Text, { 0.28f, 0.42f, 0.35f, 1.0f });
-                ImGui::Text("%s", t);
-                ImGui::PopStyleColor();
-            }
-            dl->AddLine({ 30, 82 }, { W - 30, 82 }, IM_COL32(0, 110, 40, 100));
-
-            // Login title
-            ImGui::SetCursorPos({ 0, 100 });
-            {
-                const char* t = "// LOGIN //";
-                ImGui::SetCursorPosX((W - ImGui::CalcTextSize(t).x) * 0.5f);
-                ImGui::PushStyleColor(ImGuiCol_Text, { 0.0f, 0.78f, 0.28f, 1.0f });
-                ImGui::Text("%s", t); ImGui::PopStyleColor();
+                ImVec2 c(W * 0.5f, 92.f);
+                float p = 0.6f + 0.4f * UI::Pulse(2.f);
+                dl->AddNgon(c, 38.f, UI::Fade(UI::COL_CYAN, p), 6, 2.2f);
+                dl->AddNgon(c, 28.f, UI::Fade(UI::COL_MAGENTA, 0.45f), 6, 1.3f);
+                dl->AddNgon(c, 48.f + 4.f * UI::Pulse(1.4f), UI::Fade(UI::COL_CYAN, 0.13f), 6, 1.f);
+                UI::Icon(dl, c, 32.f, UI::ICON_BOLT, UI::Fade(UI::COL_CYAN, p));
             }
 
-            ImGui::SetCursorPos({ fX, 140 });
+            // --- wordmark ---
+            {
+                if (Fonts::Title) ImGui::PushFont(Fonts::Title);
+                ImVec2 s1 = ImGui::CalcTextSize("SHIFTHUB");
+                dl->AddText(ImVec2((W - s1.x) * 0.5f, 142.f), UI::COL_TEXT, "SHIFTHUB");
+                if (Fonts::Title) ImGui::PopFont();
+            }
+            {
+                char szSub[96];
+                snprintf(szSub, sizeof(szSub), "CS2  EXTERNAL   //   v%s", SHIFTHUB_VERSION);
+                CenteredText(dl, W, 186.f, szSub, UI::COL_TEXT_FAINT, Fonts::Mono);
+            }
 
-            // USERNAME
-            ImGui::PushStyleColor(ImGuiCol_Text, { 0.45f, 0.65f, 0.55f, 1 }); ImGui::Text("USERNAME"); ImGui::PopStyleColor();
-            ImGui::SetCursorPosX(fX); ImGui::PushItemWidth(fW);
-            ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, { 12, 10 });
-            bool e1 = ImGui::InputText("##user", szUser, sizeof(szUser), ImGuiInputTextFlags_EnterReturnsTrue);
+            UI::NeonLine(dl, ImVec2(40.f, 214.f), W - 80.f, UI::Fade(UI::COL_CYAN, 0.5f), 1.f);
+            CenteredText(dl, W, 224.f, "VIP AKKAUNT", UI::Fade(UI::COL_CYAN, 0.8f), Fonts::Mono);
+
+            if (bBusy) ImGui::BeginDisabled();
+
+            // --- USERNAME ---
+            {
+                if (Fonts::Small) ImGui::PushFont(Fonts::Small);
+                dl->AddText(ImVec2(fX, 248.f), UI::COL_TEXT_MUTE, "USERNAME");
+                if (Fonts::Small) ImGui::PopFont();
+            }
+            ImGui::SetCursorPos({ fX, 266.f });
+            ImGui::PushItemWidth(fW);
+            ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(12.f, 9.f));
+            bool e1 = ImGui::InputText("##user", szUser, sizeof(szUser),
+                ImGuiInputTextFlags_EnterReturnsTrue);
             ImGui::PopStyleVar(); ImGui::PopItemWidth();
-            ImGui::Spacing(); ImGui::Spacing();
 
-            // PASSWORD
-            ImGui::SetCursorPosX(fX);
-            ImGui::PushStyleColor(ImGuiCol_Text, { 0.45f, 0.65f, 0.55f, 1 }); ImGui::Text("PASSWORD"); ImGui::PopStyleColor();
-            ImGui::SetCursorPosX(fX); ImGui::PushItemWidth(fW);
-            ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, { 12, 10 });
+            // --- PASSWORD ---
+            {
+                if (Fonts::Small) ImGui::PushFont(Fonts::Small);
+                dl->AddText(ImVec2(fX, 312.f), UI::COL_TEXT_MUTE, "PASSWORD");
+                if (Fonts::Small) ImGui::PopFont();
+            }
+            ImGui::SetCursorPos({ fX, 330.f });
+            ImGui::PushItemWidth(fW);
+            ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(12.f, 9.f));
             bool e2 = ImGui::InputText("##pass", szPass, sizeof(szPass),
                 ImGuiInputTextFlags_Password | ImGuiInputTextFlags_EnterReturnsTrue);
             ImGui::PopStyleVar(); ImGui::PopItemWidth();
-            ImGui::Spacing(); ImGui::Spacing(); ImGui::Spacing();
+
+            if (bBusy) ImGui::EndDisabled();
+
+            // --- xato xabari ---
+            if (!strError.empty())
+            {
+                if (Fonts::Small) ImGui::PushFont(Fonts::Small);
+                ImVec2 ts = ImGui::CalcTextSize(strError.c_str());
+                dl->AddText(ImVec2((W - ts.x) * 0.5f, 376.f), UI::COL_RED, strError.c_str());
+                if (Fonts::Small) ImGui::PopFont();
+            }
 
             if (ePhase == EPhase::LOGIN)
             {
-                // KIRISH BUTTON
-                ImGui::SetCursorPosX(fX);
-                ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, { 0, 14 });
-                bool bClick = ImGui::Button("K I R I S H", { fW, 0 });
-                ImGui::PopStyleVar();
-
-                if ((bClick || e1 || e2) && strlen(szUser) > 0 && strlen(szPass) > 0)
-                { strError.clear(); ePhase = EPhase::CONNECTING; flTimer = 0; }
-                else if (bClick || e1 || e2)
-                    strError = "Username va password kiriting!";
-
-                // Telegram
-                ImGui::Spacing();
+                // --- KIRISH ---
                 {
-                    const char* tg = "Adminga bog'lanish: @bakoev_71";
-                    ImGui::SetCursorPosX((W - ImGui::CalcTextSize(tg).x) * 0.5f);
-                    ImGui::PushStyleColor(ImGuiCol_Text, { 0.25f, 0.40f, 0.32f, 1 });
-                    ImGui::Text("%s", tg); ImGui::PopStyleColor();
+                    float glow = UI::Pulse(3.f);
+                    dl->AddRectFilledMultiColor(ImVec2(fX, 396.f), ImVec2(fX + fW, 398.f),
+                        UI::Fade(UI::COL_CYAN, 0.15f + 0.6f * glow),
+                        UI::Fade(UI::COL_MAGENTA, 0.15f + 0.6f * glow),
+                        UI::Fade(UI::COL_MAGENTA, 0.15f + 0.6f * glow),
+                        UI::Fade(UI::COL_CYAN, 0.15f + 0.6f * glow));
+                }
+                ImGui::SetCursorPos({ fX, 400.f });
+                bool bClick = UI::Button("K I R I S H", { fW, 46.f }, UI::BTN_PRIMARY);
+
+                if (bClick || e1 || e2)
+                {
+                    if (strlen(szUser) > 0 && strlen(szPass) > 0)
+                    {
+                        strError.clear();
+                        ePhase  = EPhase::CONNECTING;
+                        flTimer = 0.f;
+                    }
+                    else
+                        strError = "Username va password kiriting!";
                 }
 
-                // FREE VERSION BUTTON
-                ImGui::Spacing(); ImGui::Spacing();
-                ImGui::SetCursorPosX(fX);
-                ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, { 0, 10 });
-                ImGui::PushStyleColor(ImGuiCol_Button, { 0.1f, 0.2f, 0.15f, 1 });
-                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, { 0.15f, 0.3f, 0.2f, 1 });
-                ImGui::PushStyleColor(ImGuiCol_Text, { 0.6f, 0.8f, 0.7f, 1 });
-                if (ImGui::Button("FREE o'ynamoq!", { fW, 0 }))
+                // --- BEPUL REJIM (akkauntsiz) ---
+                CenteredText(dl, W, 452.f, "yoki akkauntsiz davom eting",
+                    UI::COL_TEXT_FAINT, Fonts::Small);
+
+                ImGui::SetCursorPos({ fX, 470.f });
+                if (UI::Button("BEPUL FOYDALANISH", { fW, 40.f }, UI::BTN_GHOST))
                 {
-                    g_License.m_strUser = "FreeUser";
-                    g_License.m_eTier = ETier::LITE; // Free tier
+                    g_License.m_strUser   = "FreeUser";
+                    g_License.m_eTier     = ETier::LITE;
                     g_License.m_strExpiry = "Cheksiz (FREE)";
-                    g_License.m_strToken = "FREE_MODE";
+                    g_License.m_strToken  = "FREE_MODE";
+
+                    ApplyTierDefaults();
                     ePhase = EPhase::LOADING; nCur = 0;
                     for (int i = 0; i < nSteps; i++) { steps[i].prog = 0; steps[i].done = false; }
                     bCS2Found = false;
-
-                    // Apply FREE mode restrictions automatically
-                    CONFIG_GET(bool, g_Variables.m_PlayerVisuals.m_bEnableVisuals) = true; // MUST ENABLE THIS FOR WH
-                    CONFIG_GET_ARRAY(bool, g_Variables.m_PlayerVisuals.m_vecVisualsModifiers, VISUALS_IGNORE_TEAMMATES) = true; // Jamoani e'tiborsiz qoldirish
-                    CONFIG_GET(bool, g_Variables.m_PlayerVisuals.m_bDrawBox) = true;
-                    CONFIG_GET(bool, g_Variables.m_PlayerVisuals.m_bDrawHealthBar) = true;
-                    CONFIG_GET(bool, g_Variables.m_PlayerVisuals.m_bDrawWeapon) = true;
-                    CONFIG_GET(bool, g_Variables.m_PlayerVisuals.m_bDrawHasC4) = true;
-                    CONFIG_GET(bool, g_Variables.m_Misc.m_bSniperCrosshair) = true;
-                    CONFIG_GET(bool, g_Variables.m_SpectatorList.m_bEnableSpectatorList) = true; // Automatically show spectator list
-                    CONFIG_GET(bool, g_Variables.m_Misc.m_bAntiFlash) = true;   // Flash himoya
-                    CONFIG_GET(bool, g_Variables.m_Misc.m_bC4Timer) = true;     // C4 ogohlantiruvchi
-                    CONFIG_GET(bool, g_Variables.m_Misc.m_bGrenadeWarning) = true; // Grenade warning
                 }
-                ImGui::PopStyleColor(3);
-                ImGui::PopStyleVar();
+
+                CenteredText(dl, W, 522.f, "WH · Glow · AntiFlash · C4 Timer  —  bepul",
+                    UI::Fade(UI::COL_GREEN, 0.75f), Fonts::Small);
+                CenteredText(dl, W, 542.f, "VIP uchun:  @Shifthubuzbot",
+                    UI::COL_TEXT_FAINT, Fonts::Small);
             }
-            else // CONNECTING
+            else // CONNECTING — serverga so'rov
             {
-                ImGui::SetCursorPosX(fX);
-                ImGui::PushStyleColor(ImGuiCol_Text, { 0, 0.78f, 0.28f, 1 });
-                ImGui::Text("Serverga ulanmoqda..."); ImGui::PopStyleColor();
+                CenteredText(dl, W, 400.f, "Serverga ulanmoqda...", UI::COL_GREEN, Fonts::Mono);
 
-                flTimer += dt; float prog = fminf(flTimer / 1.5f, 1.f);
-                ImGui::SetCursorPosX(fX); ImVec2 bp = ImGui::GetCursorScreenPos();
-                dl->AddRectFilled(bp, { bp.x + fW, bp.y + 5 }, IM_COL32(25, 32, 42, 255), 2);
-                dl->AddRectFilled(bp, { bp.x + fW * prog, bp.y + 5 }, IM_COL32(0, 200, 65, 255), 2);
+                flTimer += dt;
+                float prog = fminf(flTimer / 1.2f, 1.f);
+                dl->AddRectFilled(ImVec2(fX, 428.f), ImVec2(fX + fW, 433.f),
+                    UI::Fade(UI::COL_TEXT_FAINT, 0.35f), 2.f);
+                dl->AddRectFilled(ImVec2(fX, 428.f), ImVec2(fX + fW * prog, 433.f),
+                    UI::COL_CYAN, 2.f);
 
-                if (flTimer >= 1.5f)
+                if (flTimer >= 1.2f)
                 {
-                    json jBody; jBody["username"] = std::string(szUser); jBody["password"] = std::string(szPass);
-                    Http::Response resp = Http::Post(g_License.m_strApiUrl + "/api/auth/login", jBody.dump());
+                    json jBody;
+                    jBody["username"] = std::string(szUser);
+                    jBody["password"] = std::string(szPass);
+
+                    Http::Response resp = Http::Post(
+                        g_License.m_strApiUrl + X("/api/auth/login"), jBody.dump());
 
                     if (!resp.success || resp.body.empty())
                     {
-                        strError = (resp.statusCode == 0) ? "Server bilan bog'lanib bo'lmadi!"
+                        strError = (resp.statusCode == 0)
+                            ? "Server bilan bog'lanib bo'lmadi!"
                             : "Login xato (kod: " + std::to_string(resp.statusCode) + ")";
-                        try { json j = json::parse(resp.body); strError = j.value("error", strError); } catch (...) {}
+                        try { json j = json::parse(resp.body); strError = j.value("error", strError); }
+                        catch (...) {}
                         ePhase = EPhase::LOGIN;
                     }
                     else
                     {
-                        try {
+                        try
+                        {
                             json jr = json::parse(resp.body);
-                            g_License.m_strToken = jr.value("token", "");
-                            g_License.m_strUser = jr["user"].value("username", std::string(szUser));
-                            std::string t = jr["user"].value("tier", "free");
-                            g_License.m_eTier = (t == "pro") ? ETier::PRO : (t == "mid") ? ETier::MID : ETier::LITE;
+                            g_License.m_strToken  = jr.value("token", "");
+                            g_License.m_strUser   = jr["user"].value("username", std::string(szUser));
+                            std::string t         = jr["user"].value("tier", "free");
+                            g_License.m_eTier     = (t == "pro" || t == "vip") ? ETier::PRO
+                                                  : (t == "mid") ? ETier::MID : ETier::LITE;
                             g_License.m_strExpiry = jr["user"].value("expires_at", "N/A");
+
+                            // parol xotirada qolmasin
+                            SecureZeroMemory(szPass, sizeof(szPass));
+
+                            ApplyTierDefaults();
                             ePhase = EPhase::LOADING; nCur = 0;
                             for (int i = 0; i < nSteps; i++) { steps[i].prog = 0; steps[i].done = false; }
                             bCS2Found = false;
-
-                            // === FREE tugmasi kabi asosiy featurelarni avtomatik yoqamiz ===
-                            CONFIG_GET(bool, g_Variables.m_PlayerVisuals.m_bEnableVisuals) = true;
-                            CONFIG_GET_ARRAY(bool, g_Variables.m_PlayerVisuals.m_vecVisualsModifiers, VISUALS_IGNORE_TEAMMATES) = true;
-                            CONFIG_GET(bool, g_Variables.m_PlayerVisuals.m_bDrawBox) = true;
-                            CONFIG_GET(bool, g_Variables.m_PlayerVisuals.m_bDrawHealthBar) = true;
-                            CONFIG_GET(bool, g_Variables.m_PlayerVisuals.m_bDrawWeapon) = true;
-                            CONFIG_GET(bool, g_Variables.m_PlayerVisuals.m_bDrawHasC4) = true;
-                            CONFIG_GET(bool, g_Variables.m_Misc.m_bSniperCrosshair) = true;
-                            CONFIG_GET(bool, g_Variables.m_SpectatorList.m_bEnableSpectatorList) = true;
-                            CONFIG_GET(bool, g_Variables.m_Misc.m_bAntiFlash) = true;
-                            CONFIG_GET(bool, g_Variables.m_Misc.m_bC4Timer) = true;
-                            CONFIG_GET(bool, g_Variables.m_Misc.m_bGrenadeWarning) = true;
-                            CONFIG_GET(bool, g_Variables.m_Misc.m_bWatermark) = true;
-
-                            // === MID va PRO uchun qo'shimcha featurelar ===
-                            if (g_License.m_eTier >= ETier::MID)
-                            {
-                                CONFIG_GET(bool, g_Variables.m_Bhop.m_bEnableBhop) = true;
-                                CONFIG_GET(bool, g_Variables.m_TriggerBot.m_bEnableTriggerbot) = true;
-                            }
-                            if (g_License.m_eTier >= ETier::PRO)
-                            {
-                                CONFIG_GET(bool, g_Variables.m_AimBot.m_bEnableAimbot) = true;
-                                CONFIG_GET(bool, g_Variables.m_PlayerGlow.m_bEnableGlow) = true;
-                            }
-
-                        } catch (...) { strError = "Server javobi xato!"; ePhase = EPhase::LOGIN; }
+                        }
+                        catch (...) { strError = "Server javobi xato!"; ePhase = EPhase::LOGIN; }
                     }
                 }
             }
 
-            // Error
-            if (!strError.empty())
-            {
-                ImGui::Spacing();
-                ImGui::SetCursorPosX((W - ImGui::CalcTextSize(strError.c_str()).x) * 0.5f);
-                ImGui::PushStyleColor(ImGuiCol_Text, { 1, 0.22f, 0.18f, 1 });
-                ImGui::TextWrapped("%s", strError.c_str()); ImGui::PopStyleColor();
-            }
-
-            // Bottom
-            {
-                const char* by = "BY: Bissikoo";
-                ImGui::SetCursorPos({ (W - ImGui::CalcTextSize(by).x) * 0.5f, H - 52 });
-                ImGui::PushStyleColor(ImGuiCol_Text, { 0, 0.60f, 0.22f, 0.7f });
-                ImGui::Text("%s", by); ImGui::PopStyleColor();
-                const char* site = "shifthub.uz";
-                ImGui::SetCursorPos({ (W - ImGui::CalcTextSize(site).x) * 0.5f, H - 32 });
-                ImGui::PushStyleColor(ImGuiCol_Text, { 0.22f, 0.35f, 0.28f, 1 });
-                ImGui::Text("%s", site); ImGui::PopStyleColor();
-            }
+            // --- footer ---
+            CenteredText(dl, W, H - 52.f, "shifthub.uz", UI::Fade(UI::COL_CYAN, 0.6f), Fonts::Mono);
+            CenteredText(dl, W, H - 32.f, "SHIFTHUB", UI::COL_TEXT_FAINT, Fonts::Small);
         }
 
         // ===============================================================
-        //  LOADING SCREEN (unique horizontal design)
+        //  LOADING / READY
         // ===============================================================
         else if (ePhase == EPhase::LOADING || ePhase == EPhase::READY)
         {
             // --- HEADER ---
-            ImGui::SetCursorPosY(18);
+            {
+                ImVec2 c(W * 0.5f, 46.f);
+                float p = 0.6f + 0.4f * UI::Pulse(2.f);
+                dl->AddNgon(c, 20.f, UI::Fade(UI::COL_CYAN, p), 6, 1.6f);
+                UI::Icon(dl, c, 17.f, UI::ICON_BOLT, UI::Fade(UI::COL_CYAN, p));
+            }
             {
                 char szHdr[64];
-                snprintf(szHdr, sizeof(szHdr), "S H I F T H U B  v%s", SHIFTHUB_VERSION);
-                const char* t = szHdr;
-                ImGui::SetCursorPosX((W - ImGui::CalcTextSize(t).x) * 0.5f);
-                ImGui::PushStyleColor(ImGuiCol_Text, { 0, 0.82f, 0.30f, 1 });
-                ImGui::Text("%s", t); ImGui::PopStyleColor();
+                snprintf(szHdr, sizeof(szHdr), "SHIFTHUB  v%s", SHIFTHUB_VERSION);
+                CenteredText(dl, W, 74.f, szHdr, UI::COL_TEXT, Fonts::Mono);
             }
-            dl->AddLine({ 30, 42 }, { W - 30, 42 }, IM_COL32(0, 100, 40, 80));
+            UI::NeonLine(dl, ImVec2(40.f, 96.f), W - 80.f, UI::Fade(UI::COL_CYAN, 0.45f), 1.f);
 
-            // --- CS2 CROSSHAIR ---
+            // --- CROSSHAIR + GAME ---
             {
-                float cx = W * 0.5f, cy = 65;
-                ImU32 colC = IM_COL32(0, 200, 65, 140);
-                dl->AddLine({ cx - 12, cy }, { cx - 4, cy }, colC, 2);
-                dl->AddLine({ cx + 4, cy }, { cx + 12, cy }, colC, 2);
-                dl->AddLine({ cx, cy - 12 }, { cx, cy - 4 }, colC, 2);
-                dl->AddLine({ cx, cy + 4 }, { cx, cy + 12 }, colC, 2);
-                dl->AddCircleFilled({ cx, cy }, 2, IM_COL32(0, 255, 80, 200));
-            }
-            {
-                const char* cs2 = "COUNTER-STRIKE 2";
-                ImGui::SetCursorPos({ (W - ImGui::CalcTextSize(cs2).x) * 0.5f, 82 });
-                ImGui::PushStyleColor(ImGuiCol_Text, { 0.30f, 0.48f, 0.38f, 0.8f });
-                ImGui::Text("%s", cs2); ImGui::PopStyleColor();
+                float cx = W * 0.5f, cy = 122.f;
+                UI::Icon(dl, ImVec2(cx, cy), 26.f, UI::ICON_CROSSHAIR, UI::Fade(UI::COL_CYAN, 0.8f));
+                CenteredText(dl, W, 142.f, "COUNTER-STRIKE 2", UI::COL_TEXT_FAINT, Fonts::Small);
             }
 
-            // --- USER INFO ---
-            dl->AddLine({ 60, 106 }, { W - 60, 106 }, IM_COL32(0, 80, 35, 50));
-            ImGui::SetCursorPosY(114);
+            // --- USER STRIP ---
             {
                 std::string nameUp = g_License.m_strUser;
                 for (auto& ch : nameUp) ch = (char)toupper((unsigned char)ch);
-                char info[128];
-                snprintf(info, sizeof(info), "%s  |  %s  |  %s", nameUp.c_str(), g_License.GetTierName(), g_License.m_strExpiry.c_str());
-                ImGui::SetCursorPosX((W - ImGui::CalcTextSize(info).x) * 0.5f);
-                ImGui::PushStyleColor(ImGuiCol_Text, g_License.GetTierColor());
-                ImGui::Text("%s", info); ImGui::PopStyleColor();
-            }
-            dl->AddLine({ 60, 138 }, { W - 60, 138 }, IM_COL32(0, 80, 35, 50));
 
-            // ===== LOADING STEPS (horizontal bars — unique design) =====
-            float sX = 40, sW = W - 80;
-            float sY = 160;
+                ImU32 colTier = ImGui::ColorConvertFloat4ToU32(g_License.GetTierColor());
+                float wTier = UI::ChipWidth(g_License.GetTierName());
+                float wName = UI::ChipWidth(nameUp.c_str());
+                float wExp  = UI::ChipWidth(g_License.m_strExpiry.c_str());
+                float total = wTier + wName + wExp + 20.f;
+                float x = (W - total) * 0.5f;
+
+                UI::Chip(g_License.GetTierName(), colTier, ImVec2(x, 168.f));
+                UI::Chip(nameUp.c_str(), UI::COL_TEXT, ImVec2(x + wTier + 10.f, 168.f));
+                UI::Chip(g_License.m_strExpiry.c_str(), UI::COL_TEXT_MUTE, ImVec2(x + wTier + wName + 20.f, 168.f));
+            }
+
+            // ===== LOADING STEPS =====
+            float sX = 44.f, sW = W - 88.f;
+            float sY = 214.f;
 
             for (int i = 0; i < nSteps; i++)
             {
-                float rowY = sY + i * 68;
+                float rowY = sY + i * 74.f;
+                ImVec2 mn(sX, rowY), mx(sX + sW, rowY + 60.f);
 
-                // Step card background
-                ImU32 bgCol = steps[i].done ? IM_COL32(0, 40, 18, 120) :
-                    (i == nCur ? IM_COL32(0, 35, 15, 100) : IM_COL32(12, 15, 22, 80));
-                dl->AddRectFilled({ sX, rowY }, { sX + sW, rowY + 56 }, bgCol, 4);
+                bool bDone = steps[i].done;
+                bool bCurr = (i == nCur) && !bDone;
+                ImU32 accent = bDone ? UI::COL_GREEN : (bCurr ? UI::COL_CYAN : IM_COL32(40, 52, 70, 255));
 
-                // Left border accent
-                ImU32 accentCol = steps[i].done ? IM_COL32(0, 220, 70, 255) :
-                    (i == nCur ? IM_COL32(0, 160, 55, 200) : IM_COL32(40, 55, 45, 100));
-                dl->AddRectFilled({ sX, rowY }, { sX + 3, rowY + 56 }, accentCol, 2);
+                dl->AddRectFilled(mn, mx, bCurr ? IM_COL32(12, 20, 30, 235) : IM_COL32(10, 14, 21, 220), 4.f);
+                dl->AddRect(mn, mx, UI::Fade(accent, bDone || bCurr ? 0.55f : 0.35f), 4.f, 0, 1.f);
+                dl->AddRectFilled(mn, ImVec2(mn.x + 2.5f, mx.y), accent, 1.f);
+                if (bCurr) UI::GlowRect(dl, mn, mx, UI::COL_CYAN, 4.f, 4, 0.8f);
 
-                // Icon/number
-                ImGui::SetCursorPos({ sX + 14, rowY + 6 });
-                ImGui::PushStyleColor(ImGuiCol_Text, { 0.20f, 0.35f, 0.28f, 1 });
-                ImGui::Text("%s", steps[i].icon);
-                ImGui::PopStyleColor();
+                // index
+                if (Fonts::Mono) ImGui::PushFont(Fonts::Mono);
+                dl->AddText(ImVec2(mn.x + 14.f, rowY + 10.f), UI::Fade(accent, 0.9f), steps[i].icon);
+                if (Fonts::Mono) ImGui::PopFont();
 
-                // Name
-                ImGui::SetCursorPos({ sX + 60, rowY + 6 });
-                ImVec4 nameCol = steps[i].done ? ImVec4(0, 0.88f, 0.32f, 1) :
-                    (i == nCur ? ImVec4(0.85f, 0.95f, 0.88f, 1) : ImVec4(0.30f, 0.42f, 0.36f, 1));
-                ImGui::PushStyleColor(ImGuiCol_Text, nameCol);
-                ImGui::Text("%s", steps[i].name);
-                ImGui::PopStyleColor();
+                // name
+                dl->AddText(ImVec2(mn.x + 48.f, rowY + 9.f),
+                    bDone ? UI::COL_GREEN : (bCurr ? UI::COL_TEXT : UI::COL_TEXT_FAINT), steps[i].name);
 
-                // Status
-                ImGui::SetCursorPos({ sX + sW - 80, rowY + 6 });
-                if (steps[i].done)
+                // status
+                char szStat[16];
+                if (bDone)      snprintf(szStat, sizeof(szStat), "OK");
+                else if (bCurr) snprintf(szStat, sizeof(szStat), "%d%%", (int)(steps[i].prog * 100));
+                else            snprintf(szStat, sizeof(szStat), "--");
+                ImVec2 ss = ImGui::CalcTextSize(szStat);
+                dl->AddText(ImVec2(mx.x - ss.x - 14.f, rowY + 9.f),
+                    bDone ? UI::COL_GREEN : (bCurr ? UI::COL_CYAN : UI::COL_TEXT_FAINT), szStat);
+
+                // spinner while waiting
+                if (bCurr && i == 1 && !bCS2Found)
                 {
-                    ImGui::PushStyleColor(ImGuiCol_Text, { 0, 0.85f, 0.30f, 1 });
-                    ImGui::Text("100%%");
+                    float a = flPulse * 4.f;
+                    ImVec2 sc(mx.x - 34.f, rowY + 40.f);
+                    dl->PathArcTo(sc, 6.f, a, a + 4.2f, 16);
+                    dl->PathStroke(UI::COL_AMBER, 0, 1.6f);
                 }
-                else if (i == nCur)
-                {
-                    ImGui::PushStyleColor(ImGuiCol_Text, { 0.6f, 0.8f, 0.7f, 1 });
-                    ImGui::Text("%d%%", (int)(steps[i].prog * 100));
-                }
-                else
-                {
-                    ImGui::PushStyleColor(ImGuiCol_Text, { 0.25f, 0.35f, 0.30f, 1 });
-                    ImGui::Text("---");
-                }
-                ImGui::PopStyleColor();
 
-                // Progress bar (full width, thin)
-                float barY = rowY + 42;
-                dl->AddRectFilled({ sX + 12, barY }, { sX + sW - 12, barY + 4 }, IM_COL32(18, 22, 32, 200), 2);
-                float fillW = (sW - 24) * steps[i].prog;
-                if (fillW > 0)
-                    dl->AddRectFilled({ sX + 12, barY }, { sX + 12 + fillW, barY + 4 }, IM_COL32(0, 200, 65, 255), 2);
+                // progress rail
+                float barY = rowY + 46.f;
+                dl->AddRectFilled(ImVec2(mn.x + 14.f, barY), ImVec2(mx.x - 14.f, barY + 4.f), IM_COL32(16, 22, 32, 255), 2.f);
+                float fillW = (sW - 28.f) * ImClamp(steps[i].prog, 0.f, 1.f);
+                if (fillW > 0.f)
+                {
+                    dl->AddRectFilledMultiColor(ImVec2(mn.x + 14.f, barY), ImVec2(mn.x + 14.f + fillW, barY + 4.f),
+                        UI::Fade(accent, 0.5f), accent, accent, UI::Fade(accent, 0.5f));
+                }
+
+                if (bCurr && i == 1 && !bCS2Found)
+                    dl->AddText(ImVec2(mn.x + 48.f, rowY + 28.f), UI::COL_AMBER, "CS2 ni oching — kutilmoqda...");
             }
 
             // ===== ANIMATE STEPS =====
             if (nCur < nSteps && !steps[nCur].done)
             {
-                if (nCur == 1) // Counter-Strike 2 — wait for CS2 (Now step 2, index 1)
+                if (nCur == 1) // Counter-Strike 2 — wait for CS2
                 {
                     flCS2CheckTimer += dt;
                     if (flCS2CheckTimer >= 0.5f) // check every 500ms
@@ -516,14 +588,7 @@ bool LoginWindow::Run()
                     else
                     {
                         // Pulsing bar to show waiting
-                        float pulse = (sinf(flPulse * 3.f) + 1.f) * 0.15f + 0.05f;
-                        steps[nCur].prog = pulse;
-
-                        // Show message
-                        ImGui::SetCursorPos({ sX + 60, sY + 1 * 68 + 22 }); // Adjusted for step 2
-                        ImGui::PushStyleColor(ImGuiCol_Text, { 0.7f, 0.5f, 0.2f, 1 });
-                        ImGui::Text("CS2 ni oching! Kutilmoqda...");
-                        ImGui::PopStyleColor();
+                        steps[nCur].prog = (sinf(flPulse * 3.f) + 1.f) * 0.15f + 0.05f;
                     }
                 }
                 else // Other steps — auto progress
@@ -535,47 +600,45 @@ bool LoginWindow::Run()
                         steps[nCur].prog = 1; steps[nCur].done = true;
 
                         // Real actions
-                        if (nCur == 0) g_License.CheckLicense();
-                        // Removed DownloadDependencies
+                        if (nCur == 0 && !g_License.m_strToken.empty()
+                            && g_License.m_strToken != "LOCAL"
+                            && g_License.m_strToken != "FREE_MODE")
+                        {
+                            g_License.CheckLicense();
+                            g_License.DownloadDependencies();
+                        }
 
                         nCur++;
                     }
                 }
             }
 
-            // After step 3 (Dastur) done → READY
+            // After last step done → READY
             if (nCur >= nSteps && ePhase == EPhase::LOADING)
                 ePhase = EPhase::READY;
 
             // === BOSHLASH (when READY) ===
             if (ePhase == EPhase::READY)
             {
-                float btnW = W - 100, btnX = 50, btnY = H - 110; // moved up to fit keybind
+                float btnW = W - 88.f, btnX = 44.f, btnY = H - 134.f;
 
-                // Animated green line
-                float lineAlpha = (sinf(flPulse * 4.f) + 1.f) * 0.5f;
-                dl->AddRectFilled({ btnX, btnY - 3 }, { btnX + btnW, btnY },
-                    IM_COL32(0, 200, 65, (int)(lineAlpha * 200)), 1);
+                float glow = UI::Pulse(3.f);
+                dl->AddRectFilledMultiColor(ImVec2(btnX, btnY - 4.f), ImVec2(btnX + btnW, btnY - 2.f),
+                    UI::Fade(UI::COL_CYAN, 0.15f + 0.6f * glow), UI::Fade(UI::COL_MAGENTA, 0.15f + 0.6f * glow),
+                    UI::Fade(UI::COL_MAGENTA, 0.15f + 0.6f * glow), UI::Fade(UI::COL_CYAN, 0.15f + 0.6f * glow));
 
                 ImGui::SetCursorPos({ btnX, btnY });
-                ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, { 0, 14 });
-                if (ImGui::Button("B O S H L A S H", { btnW, 0 }))
+                if (UI::Button("B O S H L A S H", { btnW, 46.f }, UI::BTN_PRIMARY))
                     ePhase = EPhase::DONE;
-                ImGui::PopStyleVar();
 
                 // === MENU KEYBIND ===
                 int& menuKey = CONFIG_GET(int, g_Variables.m_Gui.m_iMenuKey);
                 static bool bListeningMenuKey = false;
                 static float fWaitTimer = 0.f;
 
-                ImGui::SetCursorPosY(btnY + 45); // below boshlash
                 if (bListeningMenuKey)
                 {
-                    const char* lb = "[ Istalgan tugmani bosing... Esc=Bekor ]";
-                    ImGui::SetCursorPosX((W - ImGui::CalcTextSize(lb).x) * 0.5f);
-                    ImGui::PushStyleColor(ImGuiCol_Text, { 0.8f, 0.4f, 0.1f, 1 });
-                    ImGui::Text("%s", lb);
-                    ImGui::PopStyleColor();
+                    CenteredText(dl, W, btnY + 58.f, "[ Istalgan tugmani bosing...  ESC = bekor ]", UI::COL_AMBER, Fonts::Mono);
 
                     fWaitTimer -= dt;
                     if (fWaitTimer < 4.8f) // delay 0.2s to ignore mouse click
@@ -591,63 +654,31 @@ bool LoginWindow::Run()
                 }
                 else
                 {
-                    // Basic VK2Str
-                    char keyName[32] = "Insert";
-                    if (menuKey == VK_DELETE) strcpy(keyName, "Delete");
-                    else if (menuKey == VK_HOME) strcpy(keyName, "Home");
-                    else if (menuKey == VK_END) strcpy(keyName, "End");
-                    else if (menuKey == VK_F1) strcpy(keyName, "F1");
-                    else if (menuKey == VK_F2) strcpy(keyName, "F2");
-                    else if (menuKey == VK_F3) strcpy(keyName, "F3");
-                    else if (menuKey == VK_F4) strcpy(keyName, "F4");
-                    else if (menuKey == VK_F5) strcpy(keyName, "F5");
-                    else if (menuKey == VK_F6) strcpy(keyName, "F6");
-                    else if (menuKey == VK_F7) strcpy(keyName, "F7");
-                    else if (menuKey == VK_F8) strcpy(keyName, "F8");
-                    else if (menuKey >= 'A' && menuKey <= 'Z') { keyName[0] = (char)menuKey; keyName[1] = 0; }
-                    else if (menuKey >= '0' && menuKey <= '9') { keyName[0] = (char)menuKey; keyName[1] = 0; }
-                    else if (menuKey == VK_LMENU || menuKey == VK_RMENU || menuKey == VK_MENU) strcpy(keyName, "Alt");
-                    else if (menuKey == VK_LSHIFT || menuKey == VK_RSHIFT || menuKey == VK_SHIFT) strcpy(keyName, "Shift");
-                    else if (menuKey == VK_LCONTROL || menuKey == VK_RCONTROL || menuKey == VK_CONTROL) strcpy(keyName, "Ctrl");
-                    else if (menuKey == VK_MBUTTON) strcpy(keyName, "M3");
-                    else if (menuKey == VK_XBUTTON1) strcpy(keyName, "M4");
-                    else if (menuKey == VK_XBUTTON2) strcpy(keyName, "M5");
-                    else if (menuKey != VK_INSERT) snprintf(keyName, sizeof(keyName), "Key: %d", menuKey);
+                    char buf[96];
+                    snprintf(buf, sizeof(buf), "MENYU TUGMASI:   [ %s ]", UI::KeyName(menuKey));
 
-                    char buf[64];
-                    snprintf(buf, sizeof(buf), "Menyuni ekranga chiqarish tugmasi:  [ %s ]", keyName);
-                    
-                    ImGui::SetCursorPosX((W - ImGui::CalcTextSize(buf).x) * 0.5f);
-                    ImGui::PushStyleColor(ImGuiCol_Text, { 0.4f, 0.6f, 0.5f, 1 });
-                    ImGui::Text("%s", buf);
-                    if (ImGui::IsItemHovered()) {
-                        ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
-                        ImGui::PopStyleColor();
-                        ImGui::PushStyleColor(ImGuiCol_Text, { 0.6f, 0.8f, 0.7f, 1 });
-                        ImGui::SetCursorPos({(W - ImGui::CalcTextSize(buf).x) * 0.5f, btnY + 45});
-                        ImGui::Text("%s", buf);
-                    }
-                    ImGui::PopStyleColor();
+                    if (Fonts::Mono) ImGui::PushFont(Fonts::Mono);
+                    ImVec2 ts = ImGui::CalcTextSize(buf);
+                    if (Fonts::Mono) ImGui::PopFont();
 
-                    if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(0))
-                    {
-                        bListeningMenuKey = true;
-                        fWaitTimer = 5.0f;
-                    }
+                    ImGui::SetCursorPos({ (W - ts.x) * 0.5f - 10.f, btnY + 54.f });
+                    ImGui::InvisibleButton("##menukeybtn", { ts.x + 20.f, ts.y + 8.f });
+                    bool hov = ImGui::IsItemHovered();
+                    if (hov) ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+                    if (ImGui::IsItemClicked()) { bListeningMenuKey = true; fWaitTimer = 5.0f; }
+
+                    ImVec2 mn = ImGui::GetItemRectMin(), mx = ImGui::GetItemRectMax();
+                    if (hov) dl->AddRect(mn, mx, UI::Fade(UI::COL_CYAN, 0.45f), 3.f, 0, 1.f);
+
+                    if (Fonts::Mono) ImGui::PushFont(Fonts::Mono);
+                    dl->AddText(ImVec2(mn.x + 10.f, mn.y + 4.f), hov ? UI::COL_CYAN : UI::COL_TEXT_MUTE, buf);
+                    if (Fonts::Mono) ImGui::PopFont();
                 }
             }
 
-            // Bottom
-            {
-                const char* by = "BY: Bissikoo";
-                ImGui::SetCursorPos({ (W - ImGui::CalcTextSize(by).x) * 0.5f, H - 45 });
-                ImGui::PushStyleColor(ImGuiCol_Text, { 0, 0.60f, 0.22f, 0.7f });
-                ImGui::Text("%s", by); ImGui::PopStyleColor();
-                const char* site = "Powered by shifthub.uz";
-                ImGui::SetCursorPos({ (W - ImGui::CalcTextSize(site).x) * 0.5f, H - 25 });
-                ImGui::PushStyleColor(ImGuiCol_Text, { 0.18f, 0.30f, 0.24f, 1 });
-                ImGui::Text("%s", site); ImGui::PopStyleColor();
-            }
+            // --- footer ---
+            CenteredText(dl, W, H - 46.f, "shifthub.uz", UI::Fade(UI::COL_CYAN, 0.6f), Fonts::Mono);
+            CenteredText(dl, W, H - 26.f, "SHIFTHUB  ·  @Bakoev_71", UI::COL_TEXT_FAINT, Fonts::Small);
         }
 
         // ===============================================================
@@ -656,8 +687,9 @@ bool LoginWindow::Run()
         else if (ePhase == EPhase::DONE)
         {
             ImGui::End();
+            ImGui::PopStyleVar();
             ImGui::Render();
-            float cc[4] = { 0.04f, 0.05f, 0.07f, 1 };
+            float cc[4] = { 0.03f, 0.04f, 0.06f, 1 };
             m_pContext->OMSetRenderTargets(1, &m_pRTV, NULL);
             m_pContext->ClearRenderTargetView(m_pRTV, cc);
             ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
@@ -666,8 +698,9 @@ bool LoginWindow::Run()
         }
 
         ImGui::End();
+        ImGui::PopStyleVar();
         ImGui::Render();
-        float cc[4] = { 0.04f, 0.05f, 0.07f, 1 };
+        float cc[4] = { 0.03f, 0.04f, 0.06f, 1 };
         m_pContext->OMSetRenderTargets(1, &m_pRTV, NULL);
         m_pContext->ClearRenderTargetView(m_pRTV, cc);
         ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());

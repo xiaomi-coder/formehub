@@ -115,6 +115,19 @@ void SchemaSystem::ApplyFallbacks()
 	// CBasePlayerController
 	SetIfZero(FNV1A::HashConst("CBasePlayerController->m_hPawn"), 1724);
 	SetIfZero(FNV1A::HashConst("CBasePlayerController->m_iszPlayerName"), 1780);
+	SetIfZero(FNV1A::HashConst("CBasePlayerController->m_iDesiredFOV"), 1932);   // FOV changer
+
+	// C_PostProcessingVolume (tungi rejim — aksar xaritalarda yorug'likni shu boshqaradi)
+	SetIfZero(FNV1A::HashConst("C_PostProcessingVolume->m_flMinExposure"), 4284);
+	SetIfZero(FNV1A::HashConst("C_PostProcessingVolume->m_flMaxExposure"), 4288);
+	SetIfZero(FNV1A::HashConst("C_PostProcessingVolume->m_bExposureControl"), 4309);
+	SetIfZero(FNV1A::HashConst("C_PostProcessingVolume->m_bMaster"), 4308);
+	SetIfZero(FNV1A::HashConst("C_PostProcessingVolume->m_flFadeDuration"), 4272);
+	SetIfZero(FNV1A::HashConst("C_PostProcessingVolume->m_flExposureCompensation"), 4292);
+
+	// C_TonemapController2 (tungi rejim — CS2 dagi yangi klass nomi)
+	SetIfZero(FNV1A::HashConst("C_TonemapController2->m_flAutoExposureMin"), 1536);
+	SetIfZero(FNV1A::HashConst("C_TonemapController2->m_flAutoExposureMax"), 1540);
 
 	// C_BaseModelEntity
 	SetIfZero(FNV1A::HashConst("C_BaseModelEntity->m_vecViewOffset"), 3704);

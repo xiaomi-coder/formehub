@@ -138,6 +138,41 @@ public:
 		CONFIG_ADD_VARIABLE(Color, m_colDamageIndicator, Color(255, 50, 50, 255));
 	}; MiscVariables_t m_Misc;
 
+	// ================== O'Q IZI (TRACER) ==============
+	struct TracerVariables_t
+	{
+		CONFIG_ADD_VARIABLE(bool,  m_bEnable,      false);
+		CONFIG_ADD_VARIABLE(int,   m_iStyle,       1);        // 0 = chiziq, 1 = chaqmoq, 2 = nur
+		CONFIG_ADD_VARIABLE(float, m_flLife,       0.6f);     // necha soniya ko'rinadi
+		CONFIG_ADD_VARIABLE(float, m_flThickness,  2.0f);
+		CONFIG_ADD_VARIABLE(float, m_flLength,     8192.f);   // o'q izining uzunligi
+		CONFIG_ADD_VARIABLE(bool,  m_bTravel,      true);     // o'q bilan birga uchsin
+		CONFIG_ADD_VARIABLE(float, m_flTravelTime, 0.07f);    // (eski) — endi tezlik ishlatiladi
+		CONFIG_ADD_VARIABLE(float, m_flSpeed,      9000.f);   // o'q tezligi (unit/sek)
+		CONFIG_ADD_VARIABLE(float, m_flDash,       420.f);    // uchayotgan chiziqcha uzunligi (unit)
+		CONFIG_ADD_VARIABLE(float, m_flSpread,     0.35f);    // tarqoqlik (gradus)
+		CONFIG_ADD_VARIABLE(bool,  m_bSmoke,       true);     // ortidan tutun izi qolsinmi
+		CONFIG_ADD_VARIABLE(float, m_flSag,        55.f);     // tutun izining pastga cho'kishi (unit/s^2)
+		CONFIG_ADD_VARIABLE(float, m_flWave,       2.6f);     // to'lqinlanish kuchi (unit)
+		CONFIG_ADD_VARIABLE(float, m_flTrail,      0.45f);    // iz uzunligi (yo'lning ulushi)
+		CONFIG_ADD_VARIABLE(bool,  m_bAutoMuzzle,  true);
+		CONFIG_ADD_VARIABLE(float, m_flViewmodelFov, 60.f);   // o'yindagi viewmodel_fov     // qurol og'zini o'zi topsin (viewmodel suyagi)
+		CONFIG_ADD_VARIABLE(float, m_flMuzzleX,    0.70f);    // qurol og'zi — ekran bo'yicha X (0..1)
+		CONFIG_ADD_VARIABLE(float, m_flMuzzleY,    0.55f);    // qurol og'zi — ekran bo'yicha Y (0..1)
+		CONFIG_ADD_VARIABLE(bool,  m_bMuzzleFlash, true);     // qurol og'zidagi chaqnash
+		CONFIG_ADD_VARIABLE(bool,  m_bImpact,      true);     // tegish nuqtasidagi portlash
+		CONFIG_ADD_VARIABLE(Color, m_colTracer,    Color(34, 226, 255, 255));
+	}; TracerVariables_t m_Tracer;
+
+	// ============ UCHINCHI SHAXS (THIRD PERSON) ======
+	struct ThirdPersonVariables_t
+	{
+		CONFIG_ADD_VARIABLE(bool,  m_bEnable,    false);
+		CONFIG_ADD_VARIABLE(int,   m_iKey,       'T');     // yoqish/o'chirish tugmasi
+		CONFIG_ADD_VARIABLE(int,   m_iMode,      5);       // observer rejimi (5 = chase)
+		CONFIG_ADD_VARIABLE(float, m_flDistance, 150.f);   // kamera masofasi
+	}; ThirdPersonVariables_t m_ThirdPerson;
+
 	// ================== RCS ==========================
 	struct RCSVariables_t
 	{
@@ -145,18 +180,6 @@ public:
 		CONFIG_ADD_VARIABLE(float, m_flScaleX,        1.0f);
 		CONFIG_ADD_VARIABLE(float, m_flScaleY,        1.0f);
 	}; RCSVariables_t m_RCS;
-
-	// ================ GRENADE HELPER ==================
-	struct GrenadeHelperVariables_t
-	{
-		CONFIG_ADD_VARIABLE(bool,  m_bEnable,       false);
-		CONFIG_ADD_VARIABLE(bool,  m_bShowAll,      true);  // Show all lineups as world markers
-		CONFIG_ADD_VARIABLE(float, m_flMaxDistance,  2000.f); // Max render distance for world markers
-		CONFIG_ADD_VARIABLE(bool,  m_bShowSmoke,    true);
-		CONFIG_ADD_VARIABLE(bool,  m_bShowFlash,    true);
-		CONFIG_ADD_VARIABLE(bool,  m_bShowMolotov,  true);
-		CONFIG_ADD_VARIABLE(bool,  m_bShowHE,       true);
-	}; GrenadeHelperVariables_t m_GrenadeHelper;
 
 	// ================== WORLD ========================
 	struct WorldVariables_t

@@ -97,7 +97,7 @@ namespace BulletTracer
     {
         if (!localPawn) return false;
 
-        constexpr std::ptrdiff_t m_iShotsFired = 0x270C;
+        constexpr std::ptrdiff_t m_iShotsFired = 0x1C8C;
         int currentShots = Game::Read<int>(localPawn + m_iShotsFired);
 
         if (currentShots > lastShotsFired && lastShotsFired >= 0)

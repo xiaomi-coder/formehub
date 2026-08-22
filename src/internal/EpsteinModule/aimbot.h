@@ -129,7 +129,7 @@ namespace Aimbot
     constexpr std::ptrdiff_t TRACE_SHAPE_OFF      = 0x98F3F0;   // TraceShape function
 
     // Fallback: m_bSpotted offsets
-    constexpr std::ptrdiff_t m_entitySpottedState = 0x1F58;
+    constexpr std::ptrdiff_t m_entitySpottedState = 0x1C60; // 7264  C_CSPlayerPawn [a2x 14176]
     constexpr std::ptrdiff_t m_bSpotted_off       = 0x8;
 
     // TraceShape function signature:

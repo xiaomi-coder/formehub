@@ -3,38 +3,40 @@
 #include <cstdint>
 
 // ============================================================================
-// OFFSETS — CS2 build 6354324
+// OFFSETS — CS2 build 14176 (a2x/cs2-dumper, 2026-08-20 07:13 UTC)
 //
-// UPDATED 2026-08-13. The values that ship with this module were dumped on
-// 2026-03-12 and no longer match the game; they made the module read garbage.
+// UPDATED 2026-08-20. Regenerated against the current game: client.dll
+// (PE build 2026-08-19 22:27 UTC) is the binary this dump was taken from.
+// The global offsets all moved +0x1000 vs the previous build; the schema
+// field layout did not move (76/78 fallbacks in SchemaSystem.cpp matched).
 //
-// Source of truth for this rewrite is the external base in this same repo,
-// which is kept current against the running game:
-//   - globals      -> <repo>/offsets.json                ("client.dll" section)
-//   - field/schema -> <repo>/src/valve/SchemaSystem.cpp  (ApplyFallbacks)
-// Those files store decimals; converted to hex here.
+// Source of truth is the cs2-dumper output vendored next to this file:
+//   - globals -> <repo>/src/internal/EpsteinModule/sdk/offsets.hpp
+//   - fields  -> <repo>/src/internal/EpsteinModule/sdk/client_dll.json
+// Both carry the same build stamp as the header above. Decimals in the
+// trailing comments; hex in the values.
 //
 // Markers:
-//   [OK]     value verified against the sources above
-//   [DERIVED] not in the sources; shifted by the delta measured on neighbouring
+//   [OK]      value matches the schema dump for the named class
+//   [DERIVED] not in the dump; shifted by the delta measured on neighbouring
 //             fields of the same struct (see note at each block)
-//   [STALE]  still the 2026-03-12 value, no way to verify — do not build new
-//            logic on these
+//   [STALE]   not a networked field, so absent from the schema dump and
+//             unverifiable — do not build new logic on these
 // ============================================================================
 
 namespace Offsets
 {
     // === Global Offsets — offsets.json "client.dll" ============ [OK] =======
-    constexpr std::ptrdiff_t dwEntityList                          = 0x2554050; // 39141456
-    constexpr std::ptrdiff_t dwLocalPlayerController               = 0x2383DB0; // 37240240
-    constexpr std::ptrdiff_t dwLocalPlayerPawn                     = 0x23A9118; // 37392664
-    constexpr std::ptrdiff_t dwPlantedC4                           = 0x2373898; // 37173400
-    constexpr std::ptrdiff_t dwViewAngles                          = 0x23BF1A8; // 37482920
-    constexpr std::ptrdiff_t dwCSGOInput                           = 0x23BEB20; // 37481248
-    constexpr std::ptrdiff_t dwGameRules                           = 0x23A8BD8; // 37391320
-    constexpr std::ptrdiff_t dwGlobalVars                          = 0x2094D38; // 34164024
-    constexpr std::ptrdiff_t dwGlowManager                         = 0x23A5908; // 37378312
-    constexpr std::ptrdiff_t dwPrediction                          = 0x23A9018; // 37392416
+    constexpr std::ptrdiff_t dwEntityList                          = 0x2555050; // 39145552
+    constexpr std::ptrdiff_t dwLocalPlayerController               = 0x2384DB0; // 37244336
+    constexpr std::ptrdiff_t dwLocalPlayerPawn                     = 0x23AA118; // 37396760
+    constexpr std::ptrdiff_t dwPlantedC4                           = 0x2374898; // 37177496
+    constexpr std::ptrdiff_t dwViewAngles                          = 0x23C01A8; // 37487016
+    constexpr std::ptrdiff_t dwCSGOInput                           = 0x23BFB20; // 37485344
+    constexpr std::ptrdiff_t dwGameRules                           = 0x23A9BD8; // 37395416
+    constexpr std::ptrdiff_t dwGlobalVars                          = 0x2095D48; // 34168136
+    constexpr std::ptrdiff_t dwGlowManager                         = 0x23A6908; // 37382408
+    constexpr std::ptrdiff_t dwPrediction                          = 0x23AA020; // 37396512
     constexpr std::ptrdiff_t dwGameEntitySystem_highestEntityIndex = 0x2090;    // 8336
 
     // === C_BaseEntity ========================================== [OK] =======
@@ -163,33 +165,33 @@ namespace Offsets
     constexpr std::ptrdiff_t m_flC4Blow          = 0x11D0; // 4560
     constexpr std::ptrdiff_t m_bBombDefused      = 0x11F4; // 4596
 
-    // === Bone / model ========================================== [STALE] ====
-    constexpr std::ptrdiff_t m_modelState    = 0x160; // CSkeletonInstance -> CModelState
-    constexpr std::ptrdiff_t m_materialGroup = 0x434; // CSkeletonInstance
-    constexpr std::ptrdiff_t m_MeshGroupMask = 0x220; // CModelState
+    // === Bone / model ========================================== [OK] =======
+    constexpr std::ptrdiff_t m_modelState    = 0x140; // 320   CSkeletonInstance
+    constexpr std::ptrdiff_t m_materialGroup = 0x3F8; // 1016  CSkeletonInstance
+    constexpr std::ptrdiff_t m_MeshGroupMask = 0x208; // 520   CModelState
     constexpr std::ptrdiff_t m_BoneArray     = 0x80;  // CModelState
-    constexpr std::ptrdiff_t m_flSimulationTime = 0x3C0;
+    constexpr std::ptrdiff_t m_flSimulationTime = 0x3B8; // 952   C_BaseEntity
 
-    // === Render overrides (C_BaseModelEntity) ================== [STALE] ====
-    constexpr std::ptrdiff_t m_nRenderMode            = 0xB60;
-    constexpr std::ptrdiff_t m_clrRender              = 0xB80;
-    constexpr std::ptrdiff_t m_flGlowBackfaceMult     = 0xD18;
-    constexpr std::ptrdiff_t m_ClientOverrideTint     = 0xE40;
-    constexpr std::ptrdiff_t m_bUseClientOverrideTint = 0xE44;
+    // === Render overrides (C_BaseModelEntity) ================== [OK] =======
+    constexpr std::ptrdiff_t m_nRenderMode            = 0xC78; // 3192  C_BaseModelEntity
+    constexpr std::ptrdiff_t m_clrRender              = 0xC98; // 3224  C_BaseModelEntity
+    constexpr std::ptrdiff_t m_flGlowBackfaceMult     = 0xE38; // 3640  C_BaseModelEntity
+    constexpr std::ptrdiff_t m_ClientOverrideTint     = 0xF60; // 3936  C_BaseModelEntity
+    constexpr std::ptrdiff_t m_bUseClientOverrideTint = 0xF64; // 3940  C_BaseModelEntity
 
     // === C_CSPlayerPawn — gloves / misc ======================== [STALE] ====
     // No counterpart in the external base. skin_changer.h no longer reads the
     // active weapon through m_pClippingWeapon; it goes through
     // m_pWeaponServices -> m_hActiveWeapon, which is verified above.
     constexpr std::ptrdiff_t m_pClippingWeapon      = 0x3DC0;
-    constexpr std::ptrdiff_t m_bNeedToReApplyGloves = 0x188D;
-    constexpr std::ptrdiff_t m_EconGloves           = 0x1890;
-    constexpr std::ptrdiff_t m_nEconGlovesChanged   = 0x1D00;
-    constexpr std::ptrdiff_t m_hHudModelArms        = 0x2400;
+    constexpr std::ptrdiff_t m_bNeedToReApplyGloves = 0x168D; // 5773  C_CSPlayerPawn
+    constexpr std::ptrdiff_t m_EconGloves           = 0x1690; // 5776  C_CSPlayerPawn
+    constexpr std::ptrdiff_t m_nEconGlovesChanged   = 0x1B00; // 6912  C_CSPlayerPawn
+    constexpr std::ptrdiff_t m_hHudModelArms        = 0x1B84; // 7044  C_CSPlayerPawn
 
-    // === CCSPlayerController_InventoryServices ================= [STALE] ====
-    constexpr std::ptrdiff_t m_pInventoryServices = 0x810;
-    constexpr std::ptrdiff_t m_unMusicID          = 0x58;
+    // === CCSPlayerController_InventoryServices ================= [OK] =======
+    constexpr std::ptrdiff_t m_pInventoryServices = 0x818; // 2072  CCSPlayerController
+    constexpr std::ptrdiff_t m_unMusicID          = 0x58; // 88    CCSPlayerController_InventoryServices
 
     // CCSGOInput vtable index for CreateMove (reference only, unused)
     constexpr int CCSGOInput_CreateMoveIdx = 21;

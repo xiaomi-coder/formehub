@@ -1,4 +1,8 @@
 #include "Includes.h"
+#include "features/skins/Skins.h"
+#include "features/tracer/Tracer.h"
+#include "features/loot/LootESP.h"
+#include "features/thirdperson/ThirdPerson.h"
 
 FILE* m_pConsoleStream = nullptr;
 std::ofstream m_ofsFile{};
@@ -44,6 +48,193 @@ void SetThreadPriorityWrapper()
     }
     else
         throw std::runtime_error(X("failed to set thread priority"));
+}
+
+// -----------------------------------------------------------------------
+//  C4 TIMER + DAMAGE
+//  Portlagan bombani entity list orqali topamiz (dwPlantedC4 offseti eskirsa
+//  ham ishlaydi), ekranga HUD panel + dunyoda 3D belgi chizamiz.
+// -----------------------------------------------------------------------
+static void RenderBombTimer(const std::vector<EntityObject_t>& vecEntities)
+{
+    if (!CONFIG_GET(bool, g_Variables.m_Misc.m_bC4Timer))
+        return;
+
+    // ---- schema offsetlari (bir marta) ----
+    static std::uint32_t s_uSceneNode = 0U, s_uOrigin = 0U, s_uBlow = 0U,
+                         s_uDefused   = 0U, s_uSite   = 0U, s_uTicking = 0U;
+    static bool s_bResolved = false;
+    if (!s_bResolved)
+    {
+        s_bResolved = true;
+        auto Get = [](const char* szField) -> std::uint32_t
+        {
+            auto it = SchemaSystem::m_mapSchemaOffsets.find(FNV1A::Hash(szField));
+            return (it != SchemaSystem::m_mapSchemaOffsets.end()) ? it->second : 0U;
+        };
+        s_uSceneNode = Get("C_BaseEntity->m_pGameSceneNode");
+        s_uOrigin    = Get("CGameSceneNode->m_vecAbsOrigin");
+        s_uBlow      = Get("C_PlantedC4->m_flC4Blow");
+        s_uDefused   = Get("C_PlantedC4->m_bBombDefused");
+        s_uSite      = Get("C_PlantedC4->m_nBombSite");
+        s_uTicking   = Get("C_PlantedC4->m_bBombTicking");
+    }
+
+    if (s_uBlow == 0U)
+        return;
+
+    // ---- bombani topish: avval entity list, keyin global pointer ----
+    std::uintptr_t uBomb = 0U;
+    for (const EntityObject_t& object : vecEntities)
+    {
+        if (object.m_eType == EEntityType::ENTITY_PLANTEDC4 && object.m_pEntity)
+        {
+            uBomb = reinterpret_cast<std::uintptr_t>(object.m_pEntity);
+            break;
+        }
+    }
+
+    if (uBomb == 0U && g_Globals.m_Offsets.m_uPlantedC4 != 0U)
+    {
+        std::uintptr_t uList = g_Memory.ReadMemory<std::uintptr_t>(g_Globals.m_Offsets.m_uPlantedC4);
+        if (uList > 0x10000)
+        {
+            std::uintptr_t uEntity = g_Memory.ReadMemory<std::uintptr_t>(uList);
+            if (uEntity > 0x10000)
+                uBomb = uEntity;
+        }
+    }
+
+    if (uBomb == 0U)
+        return;
+
+    if (s_uDefused != 0U && g_Memory.ReadMemory<bool>(uBomb + s_uDefused))
+        return;
+    if (s_uTicking != 0U && !g_Memory.ReadMemory<bool>(uBomb + s_uTicking))
+        return;
+
+    const float flBlow = g_Memory.ReadMemory<float>(uBomb + s_uBlow);
+    const float flNow  = g_Interfaces.m_GlobalVars.m_flCurrentTime;
+    if (!std::isfinite(flBlow) || flNow <= 0.f)
+        return;
+
+    const float flRemain = flBlow - flNow;
+    if (flRemain <= 0.f || flRemain > 45.f)   // C4 = 40 soniya
+        return;
+
+    const int   nSite  = (s_uSite != 0U) ? g_Memory.ReadMemory<int>(uBomb + s_uSite) : -1;
+    const char* szSite = (nSite == 0) ? "A" : (nSite == 1) ? "B" : "?";
+
+    // ---- bomba pozitsiyasi ----
+    Vector vecBomb{ 0.f, 0.f, 0.f };
+    bool   bHasPos = false;
+    if (s_uSceneNode != 0U && s_uOrigin != 0U)
+    {
+        std::uintptr_t uNode = g_Memory.ReadMemory<std::uintptr_t>(uBomb + s_uSceneNode);
+        if (uNode > 0x10000)
+        {
+            vecBomb = g_Memory.ReadMemory<Vector>(uNode + s_uOrigin);
+            bHasPos = std::isfinite(vecBomb.x) && std::isfinite(vecBomb.y) && std::isfinite(vecBomb.z);
+        }
+    }
+
+    // ---- o'zimizga yetadigan zarar ----
+    int  iDamage = -1;
+    bool bFatal  = false;
+    C_CSPlayerPawn* pLocalPawn = g_Globals.m_LocalPlayer.m_pPlayerPawn;
+    if (bHasPos && pLocalPawn && pLocalPawn->IsAlive())
+    {
+        const Vector vecLocal = pLocalPawn->m_pGameSceneNode()->m_vecAbsOrigin();
+        const float  flDist   = vecBomb.DistTo(vecLocal);
+
+        // CS2: markazda 500 zarar, 500 * 3.5 unitda 0 gacha chiziqli kamayadi
+        float flDamage = 500.f * (1.f - ImClamp(flDist / (500.f * 3.5f), 0.f, 1.f));
+        if (pLocalPawn->m_ArmorValue() > 0)
+            flDamage *= 0.5f;                  // kevlar taxminan yarmini yutadi
+
+        iDamage = static_cast<int>(flDamage);
+        bFatal  = (iDamage >= pLocalPawn->m_iHealth());
+    }
+
+    const Color colTime = (flRemain > 10.f) ? Color(255, 210, 60, 255)
+                        : (flRemain > 5.f)  ? Color(255, 140, 30, 255)
+                                            : Color(255, 45, 45, 255);
+
+    // ================= HUD PANEL (doim ko'rinadi) =================
+    {
+        const float flW = 260.f;
+        const float flH = (iDamage > 0) ? 78.f : 58.f;
+        const float flX = Window::m_iWidth * 0.5f - flW * 0.5f;
+        const float flY = 58.f;
+
+        Draw::AddRect(ImVec2(flX, flY), ImVec2(flX + flW, flY + flH),
+            Color(8, 11, 17, 230), DRAW_RECT_FILLED | DRAW_RECT_OUTLINE, colTime, 4.f, 1.f);
+
+        // chap chekka aksenti
+        Draw::AddRect(ImVec2(flX, flY), ImVec2(flX + 3.f, flY + flH), colTime, DRAW_RECT_FILLED);
+
+        char szTitle[48];
+        snprintf(szTitle, sizeof(szTitle), "C4  //  %s SITE", szSite);
+        Draw::AddText(Fonts::Default, 14.f, ImVec2(flX + 12.f, flY + 8.f), std::string(szTitle),
+            Color(150, 170, 190, 255), DRAW_TEXT_DROPSHADOW, Color(0, 0, 0, 220));
+
+        char szTime[24];
+        snprintf(szTime, sizeof(szTime), "%.1f", flRemain);
+        ImVec2 vecTimeSize = Fonts::Default->CalcTextSizeA(26.f, FLT_MAX, 0.f, szTime);
+        Draw::AddText(Fonts::Default, 26.f, ImVec2(flX + flW - vecTimeSize.x - 12.f, flY + 6.f),
+            std::string(szTime), colTime, DRAW_TEXT_DROPSHADOW, Color(0, 0, 0, 220));
+
+        // vaqt chizig'i (40 soniya)
+        const float flBarY = flY + 34.f;
+        Draw::AddRect(ImVec2(flX + 12.f, flBarY), ImVec2(flX + flW - 12.f, flBarY + 5.f),
+            Color(20, 26, 38, 255), DRAW_RECT_FILLED, Color(0, 0, 0, 0), 2.f);
+        const float flFill = (flW - 24.f) * ImClamp(flRemain / 40.f, 0.f, 1.f);
+        if (flFill > 0.f)
+            Draw::AddRect(ImVec2(flX + 12.f, flBarY), ImVec2(flX + 12.f + flFill, flBarY + 5.f),
+                colTime, DRAW_RECT_FILLED, Color(0, 0, 0, 0), 2.f);
+
+        // defuse imkoniyati
+        const char* szDefuse = (flRemain >= 10.f) ? "DEFUSE: kit'siz ham ulguradi"
+                             : (flRemain >= 5.f)  ? "DEFUSE: faqat KIT bilan"
+                                                  : "DEFUSE: kech!";
+        Draw::AddText(Fonts::Default, 13.f, ImVec2(flX + 12.f, flBarY + 10.f), std::string(szDefuse),
+            (flRemain >= 5.f) ? Color(140, 160, 180, 255) : Color(255, 80, 80, 255),
+            DRAW_TEXT_DROPSHADOW, Color(0, 0, 0, 220));
+
+        // zarar
+        if (iDamage > 0)
+        {
+            char szDamage[64];
+            if (bFatal) snprintf(szDamage, sizeof(szDamage), "SIZGA: O'LIM (-%d HP)", iDamage);
+            else        snprintf(szDamage, sizeof(szDamage), "SIZGA: -%d HP", iDamage);
+
+            Draw::AddText(Fonts::Default, 14.f, ImVec2(flX + 12.f, flBarY + 26.f), std::string(szDamage),
+                bFatal ? Color(255, 45, 45, 255) : Color(255, 190, 60, 255),
+                DRAW_TEXT_DROPSHADOW, Color(0, 0, 0, 220));
+        }
+    }
+
+    // ================= DUNYODAGI BELGI =================
+    if (bHasPos)
+    {
+        ImVec2 vecScreen;
+        if (Draw::WorldToScreen(vecBomb, vecScreen))
+        {
+            const ImVec2 vecMin(vecScreen.x - 18.f, vecScreen.y - 14.f);
+            const ImVec2 vecMax(vecScreen.x + 18.f, vecScreen.y + 5.f);
+
+            Draw::AddRect(ImVec2(vecMin.x - 1.f, vecMin.y - 1.f), ImVec2(vecMax.x + 1.f, vecMax.y + 1.f),
+                Color(0, 0, 0, 180), DRAW_RECT_NONE);
+            Draw::AddRect(vecMin, vecMax, colTime, DRAW_RECT_NONE);
+
+            char szWorld[48];
+            snprintf(szWorld, sizeof(szWorld), "C4 [%s] %.1f", szSite, flRemain);
+            ImVec2 vecSize = Fonts::ESP->CalcTextSizeA(Fonts::ESP->FontSize, FLT_MAX, 0.f, szWorld);
+            Draw::AddText(Fonts::ESP, Fonts::ESP->FontSize,
+                ImVec2(vecScreen.x - vecSize.x * 0.5f, vecMin.y - Fonts::ESP->FontSize - 3.f),
+                std::string(szWorld), colTime, DRAW_TEXT_DROPSHADOW, Color(0, 0, 0, 200));
+        }
+    }
 }
 
 // -----------------------------------------------------------------------
@@ -127,7 +318,9 @@ void RenderThread()
                 ESP::RenderGrenades(vecEntities);
 
             // ===== DROPPED WEAPONS ESP =====
-            ESP::RenderWeapons(vecEntities);
+            // Eski ESP::RenderWeapons ba'zi qurol klasslarini tanimasdi
+            // (C_M4A1, C_WeaponAWP...), shuning uchun mustaqil modul.
+            LootESP::Render();
 
             // ===== 3D DAMAGE INDICATORS =====
             ESP::RenderDamageIndicators();
@@ -155,7 +348,7 @@ void RenderThread()
             if (CONFIG_GET(bool, g_Variables.m_Misc.m_bWatermark))
             {
                 char szWatermark[64];
-                snprintf(szWatermark, sizeof(szWatermark), "shifthub.uz v%s | FPS: %03d", SHIFTHUB_VERSION, static_cast<int>(ImGui::GetIO().Framerate));
+                snprintf(szWatermark, sizeof(szWatermark), "SHIFTHUB v%s | FPS: %03d", SHIFTHUB_VERSION, static_cast<int>(ImGui::GetIO().Framerate));
                 
                 ImVec2 textSize = Fonts::Default->CalcTextSizeA(Fonts::Default->FontSize, FLT_MAX, 0.0f, szWatermark);
                 ImVec2 padding(8.f, 4.f);
@@ -163,143 +356,16 @@ void RenderThread()
                 ImVec2 boxMax(15.f + textSize.x + padding.x * 2.f, 15.f + textSize.y + padding.y * 2.f);
 
                 // Background and outline
-                Draw::AddRect(boxMin, boxMax, Color(10, 12, 18, 200), DRAW_RECT_FILLED | DRAW_RECT_OUTLINE, Color(0, 180, 60, 255), 4.f);
+                Draw::AddRect(boxMin, boxMax, Color(8, 11, 17, 210), DRAW_RECT_FILLED | DRAW_RECT_OUTLINE, Color(34, 226, 255, 200), 4.f);
                 // Text
-                Draw::AddText(Fonts::Default, Fonts::Default->FontSize, ImVec2(boxMin.x + padding.x, boxMin.y + padding.y), std::string(szWatermark), Color(200, 255, 210, 255), DRAW_TEXT_DROPSHADOW, Color(0, 0, 0, 255));
+                Draw::AddText(Fonts::Default, Fonts::Default->FontSize, ImVec2(boxMin.x + padding.x, boxMin.y + padding.y), std::string(szWatermark), Color(208, 224, 240, 255), DRAW_TEXT_DROPSHADOW, Color(0, 0, 0, 255));
             }
 
-            // ===== C4 TIMER + ESP =====
-            if (CONFIG_GET(bool, g_Variables.m_Misc.m_bC4Timer))
-            {
-                static float s_flRemain = -1.f;
-                static int s_nSite = -1;
-                static int s_iFrame = 0;
-                static Vector s_vecBombPos = { 0.f, 0.f, 0.f };
-                static bool s_bHasPos = false;
+            // ===== O'Q IZI (TRACER) =====
+            Tracer::Render();
 
-                if (s_iFrame++ % 15 == 0)
-                {
-                    s_flRemain = -1.f;
-                    s_nSite = -1;
-                    s_bHasPos = false;
-
-                    std::uintptr_t uBase = g_Globals.m_Offsets.m_uPlantedC4;
-                    if (uBase != 0)
-                    {
-                        std::uintptr_t pList = g_Memory.ReadMemory<std::uintptr_t>(uBase);
-                        if (pList > 0x10000)
-                        {
-                            std::uintptr_t uEnt = g_Memory.ReadMemory<std::uintptr_t>(pList);
-                            if (uEnt > 0x10000)
-                            {
-                                auto itBlow = SchemaSystem::m_mapSchemaOffsets.find(FNV1A::HashConst("C_PlantedC4->m_flC4Blow"));
-                                if (itBlow != SchemaSystem::m_mapSchemaOffsets.end() && itBlow->second > 0)
-                                {
-                                    float flBlow = g_Memory.ReadMemory<float>(uEnt + itBlow->second);
-                                    float flCur = g_Interfaces.m_GlobalVars.m_flCurrentTime;
-
-                                    if (flBlow > 0.f && flCur > 0.f && std::isfinite(flBlow))
-                                    {
-                                        float flRem = flBlow - flCur;
-                                        if (flRem >= 0.f && flRem <= 60.f)
-                                        {
-                                            s_flRemain = flRem;
-
-                                            auto itSite = SchemaSystem::m_mapSchemaOffsets.find(FNV1A::HashConst("C_PlantedC4->m_nBombSite"));
-                                            if (itSite != SchemaSystem::m_mapSchemaOffsets.end() && itSite->second > 0)
-                                                s_nSite = g_Memory.ReadMemory<int>(uEnt + itSite->second);
-
-                                            // Read bomb 3D position: entity -> m_pGameSceneNode -> m_vecAbsOrigin
-                                            auto itNode = SchemaSystem::m_mapSchemaOffsets.find(FNV1A::HashConst("C_BaseEntity->m_pGameSceneNode"));
-                                            auto itOrigin = SchemaSystem::m_mapSchemaOffsets.find(FNV1A::HashConst("CGameSceneNode->m_vecAbsOrigin"));
-
-                                            if (itNode != SchemaSystem::m_mapSchemaOffsets.end() && itNode->second > 0 &&
-                                                itOrigin != SchemaSystem::m_mapSchemaOffsets.end() && itOrigin->second > 0)
-                                            {
-                                                std::uintptr_t pSceneNode = g_Memory.ReadMemory<std::uintptr_t>(uEnt + itNode->second);
-                                                if (pSceneNode > 0x10000)
-                                                {
-                                                    s_vecBombPos = g_Memory.ReadMemory<Vector>(pSceneNode + itOrigin->second);
-                                                    if (std::isfinite(s_vecBombPos.x) && std::isfinite(s_vecBombPos.y) && std::isfinite(s_vecBombPos.z))
-                                                        s_bHasPos = true;
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                if (s_flRemain >= 0.f && s_bHasPos)
-                {
-                    const char* szSite = (s_nSite == 0) ? "A" : (s_nSite == 1) ? "B" : "?";
-                    Color col = (s_flRemain > 10.f) ? Color(255, 255, 50, 255) :
-                                (s_flRemain > 5.f)  ? Color(255, 150, 0, 255)  :
-                                                       Color(255, 30, 30, 255);
-
-                    // Convert bomb world position to screen
-                    ImVec2 screenPos;
-                    if (Draw::WorldToScreen(s_vecBombPos, screenPos))
-                    {
-                        // ESP-style box around bomb
-                        float boxW = 20.f;
-                        float boxH = 16.f;
-                        ImVec2 boxMin(screenPos.x - boxW, screenPos.y - boxH);
-                        ImVec2 boxMax(screenPos.x + boxW, screenPos.y + boxH * 0.3f);
-
-                        // Outline
-                        Draw::AddRect(ImVec2(boxMin.x - 1.f, boxMin.y - 1.f), ImVec2(boxMax.x + 1.f, boxMax.y + 1.f), Color(0, 0, 0, 180), DRAW_RECT_NONE);
-                        // Box
-                        Draw::AddRect(boxMin, boxMax, col, DRAW_RECT_NONE);
-
-                        // Timer text above box
-                        char szWorld[64];
-                        snprintf(szWorld, sizeof(szWorld), "C4 [%s] %.1fs", szSite, s_flRemain);
-                        Draw::AddText(Fonts::ESP, Fonts::ESP->FontSize,
-                            ImVec2(screenPos.x - 28.f, boxMin.y - Fonts::ESP->FontSize - 3.f),
-                            std::string(szWorld), col, DRAW_TEXT_DROPSHADOW, Color(0, 0, 0, 200));
-                        // C4 Damage Indicator
-                        C_CSPlayerPawn* pLocalPawn = g_Globals.m_LocalPlayer.m_pPlayerPawn;
-                        if (pLocalPawn && pLocalPawn->IsAlive())
-                        {
-                            Vector vecLocalPos = pLocalPawn->m_pGameSceneNode()->m_vecAbsOrigin();
-                            float flDistance = s_vecBombPos.DistTo(vecLocalPos);
-                            
-                            // CS2 C4 damage formula approx (radius 500)
-                            // float flDamage = 500.f * exp(- (d^2) / (2 * 175^2))
-                            float flDamage = 500.f * exp(-pow(flDistance, 2.f) / (2.f * pow(500.f, 2.f)));
-                            
-                            int iHealth = pLocalPawn->m_iHealth();
-                            int iArmor = pLocalPawn->m_ArmorValue();
-                            
-                            if (iArmor > 0) {
-                                float flArmorRatio = 0.5f; // simple armor mitigation
-                                flDamage *= flArmorRatio;
-                            }
-                            
-                            int iFinalDamage = static_cast<int>(flDamage);
-                            
-                            if (iFinalDamage > 1) { // Only show if taking damage
-                                std::string strDamage;
-                                Color colDamage;
-                                if (iFinalDamage >= iHealth) {
-                                    strDamage = "FATAL";
-                                    colDamage = Color(255, 0, 0, 255);
-                                } else {
-                                    strDamage = "-" + std::to_string(iFinalDamage) + " HP";
-                                    colDamage = Color(255, 150, 0, 255);
-                                }
-                                
-                                Draw::AddText(Fonts::ESP, Fonts::ESP->FontSize,
-                                    ImVec2(screenPos.x - 18.f, boxMax.y + 3.f),
-                                    strDamage, colDamage, DRAW_TEXT_DROPSHADOW, Color(0, 0, 0, 200));
-                            }
-                        }
-                    }
-                }
-            }
+            // ===== C4 TIMER + DAMAGE =====
+            RenderBombTimer(vecEntities);
         }
 
         Draw::SwapDrawData();
@@ -375,17 +441,29 @@ void TickThread()
             continue;
         }
 
-        if (!g_Memory.IsWindowInForeground(X("Counter-Strike 2"), g_Globals.m_Instance) || Gui::m_bOpen)
-        {
-            g_Utilities.Sleep(1000.0f);
-            continue;
-        }
-
         // Snapshot entities
         std::unique_lock lockEntityGuard(EntityList::m_mtxEntities);
         std::vector<EntityObject_t> vecEntities;
         vecEntities.assign(EntityList::m_vecEntities.begin(), EntityList::m_vecEntities.end());
         lockEntityGuard.unlock();
+
+        // ===== WORLD / NIGHT MODE / FOV =====
+        // Menyu ochiq bo'lsa ham qo'llanadi — slayderni surganda o'zgarish darhol ko'rinsin
+        try { World::Run(vecEntities); } catch (...) { }
+
+        // ===== UCHINCHI SHAXS =====
+        // Menyu ochiq bo'lsa ham ishlaydi
+        try { ThirdPerson::Run(); } catch (...) { }
+
+        // ===== SKIN CHANGER =====
+        // Menyu ochiq bo'lsa ham qo'llanadi — skin tanlanganda darhol ko'rinsin
+        try { Skins::Run(); } catch (...) { }
+
+        if (!g_Memory.IsWindowInForeground(X("Counter-Strike 2"), g_Globals.m_Instance) || Gui::m_bOpen)
+        {
+            g_Utilities.Sleep(50.0f);
+            continue;
+        }
 
         try
         {
@@ -412,6 +490,9 @@ void TickThread()
                     }
                 }
             }
+
+            // ===== O'Q IZI (TRACER) =====
+            Tracer::Run();
 
             // ===== TRIGGERBOT =====
             if (g_License.HasFeature(ETier::MID) && CONFIG_GET(bool, g_Variables.m_TriggerBot.m_bEnableTriggerbot))
@@ -525,11 +606,6 @@ void TickThread()
             if (CONFIG_GET(bool, g_Variables.m_PlayerGlow.m_bEnableGlow))
                 PlayerGlow::Run(vecEntities);
 
-            // ===== WORLD / NIGHT MODE / FOV =====
-            World::Run(vecEntities);
-
-            // ===== SKIN CHANGER =====
-            SkinChanger::Run();
         }
         catch (...) { }
 
@@ -538,76 +614,139 @@ void TickThread()
 }
 
 // -----------------------------------------------------------------------
+//  AUTO-ACCEPT
+//  Eski usul o'yin oynasining DC'sidan GetPixel qilardi — DirectX oynasida
+//  bu ishlamaydi. Endi ekranning o'zidan (desktop DC) surat olamiz va
+//  yashil "ACCEPT" tugmasini qidiramiz.
+// -----------------------------------------------------------------------
+static bool FindAcceptButton(HWND hCS2, POINT& ptOut)
+{
+    RECT rc{};
+    if (!GetWindowRect(hCS2, &rc))
+        return false;
+
+    const int iW = rc.right - rc.left;
+    const int iH = rc.bottom - rc.top;
+    if (iW < 800 || iH < 600)
+        return false;
+
+    // "Match found" paneli ekran markazida turadi — shu hududni skanerlaymiz
+    const int iBandX = rc.left + static_cast<int>(iW * 0.25f);
+    const int iBandY = rc.top  + static_cast<int>(iH * 0.32f);
+    const int iBandW = static_cast<int>(iW * 0.50f);
+    const int iBandH = static_cast<int>(iH * 0.52f);
+
+    HDC hScreen = GetDC(NULL);
+    if (!hScreen)
+        return false;
+
+    HDC     hMem = CreateCompatibleDC(hScreen);
+    HBITMAP hBmp = CreateCompatibleBitmap(hScreen, iBandW, iBandH);
+    HGDIOBJ hOld = SelectObject(hMem, hBmp);
+
+    bool bFound = false;
+
+    if (BitBlt(hMem, 0, 0, iBandW, iBandH, hScreen, iBandX, iBandY, SRCCOPY))
+    {
+        BITMAPINFO bmi{};
+        bmi.bmiHeader.biSize        = sizeof(BITMAPINFOHEADER);
+        bmi.bmiHeader.biWidth       = iBandW;
+        bmi.bmiHeader.biHeight      = -iBandH;   // top-down
+        bmi.bmiHeader.biPlanes      = 1;
+        bmi.bmiHeader.biBitCount    = 32;
+        bmi.bmiHeader.biCompression = BI_RGB;
+
+        std::vector<std::uint8_t> vecPixels(static_cast<size_t>(iBandW) * iBandH * 4);
+        if (GetDIBits(hMem, hBmp, 0, iBandH, vecPixels.data(), &bmi, DIB_RGB_COLORS))
+        {
+            long long llSumX = 0, llSumY = 0;
+            int nHits = 0;
+            int iMinX = iBandW, iMaxX = 0, iMinY = iBandH, iMaxY = 0;
+
+            for (int y = 0; y < iBandH; y += 3)
+            {
+                const std::uint8_t* pRow = vecPixels.data() + static_cast<size_t>(y) * iBandW * 4;
+                for (int x = 0; x < iBandW; x += 3)
+                {
+                    const int b = pRow[x * 4 + 0];
+                    const int g = pRow[x * 4 + 1];
+                    const int r = pRow[x * 4 + 2];
+
+                    // CS2 "ACCEPT" tugmasi — to'yingan yashil
+                    if (g > 110 && (g - r) > 35 && (g - b) > 45 && r < 170 && b < 170)
+                    {
+                        llSumX += x; llSumY += y; nHits++;
+                        if (x < iMinX) iMinX = x;
+                        if (x > iMaxX) iMaxX = x;
+                        if (y < iMinY) iMinY = y;
+                        if (y > iMaxY) iMaxY = y;
+                    }
+                }
+            }
+
+            // tugmaga o'xshash blok bo'lsin: keng, juda baland emas
+            if (nHits > 350)
+            {
+                const int iBoxW = iMaxX - iMinX;
+                const int iBoxH = iMaxY - iMinY;
+                if (iBoxW > 90 && iBoxH > 15 && iBoxH < iBandH / 2)
+                {
+                    ptOut.x = iBandX + static_cast<int>(llSumX / nHits);
+                    ptOut.y = iBandY + static_cast<int>(llSumY / nHits);
+                    bFound  = true;
+                }
+            }
+        }
+    }
+
+    SelectObject(hMem, hOld);
+    DeleteObject(hBmp);
+    DeleteDC(hMem);
+    ReleaseDC(NULL, hScreen);
+    return bFound;
+}
+
 void AutoAcceptThread()
 {
     SetThreadPriorityWrapper();
     while (!g_Globals.m_bIsUnloading)
     {
-        if (CONFIG_GET(bool, g_Variables.m_Misc.m_bAutoAccept))
+        // O'yin ichida yoki menyu ochiq bo'lsa tekshirmaymiz — noto'g'ri bosishning oldini oladi
+        if (CONFIG_GET(bool, g_Variables.m_Misc.m_bAutoAccept) && !Gui::m_bOpen && !g_Utilities.IsInGame())
         {
             HWND hCS2 = FindWindowA("SDL_app", "Counter-Strike 2");
-            if (hCS2 && GetForegroundWindow() == hCS2)
+            if (hCS2 && IsWindowVisible(hCS2) && !IsIconic(hCS2))
             {
-                RECT rect;
-                if (GetClientRect(hCS2, &rect))
+                POINT ptAccept{};
+                if (FindAcceptButton(hCS2, ptAccept))
                 {
-                    int width = rect.right - rect.left;
-                    int height = rect.bottom - rect.top;
+                    POINT ptOld{};
+                    GetCursorPos(&ptOld);
 
-                    if (width >= 800 && height >= 600)
+                    if (GetForegroundWindow() != hCS2)
                     {
-                        HDC hdc = GetDC(hCS2);
-                        if (hdc)
-                        {
-                            int centerX = width / 2;
-                            int centerY = height / 2;
-                            
-                            int greenCount = 0;
-                            // Scan a grid in the center
-                            for (int x = centerX - 30; x <= centerX + 30; x += 10)
-                            {
-                                for (int y = centerY - 50; y <= centerY + 50; y += 10)
-                                {
-                                    COLORREF color = GetPixel(hdc, x, y);
-                                    int r = GetRValue(color);
-                                    int g = GetGValue(color);
-                                    int b = GetBValue(color);
-                                    
-                                    // Accept button is vivid green: High G.
-                                    if (g > 100 && g > (r + 20) && g > (b + 20))
-                                        greenCount++;
-                                }
-                            }
-                            ReleaseDC(hCS2, hdc);
-
-                            // Out of ~77 points, if we find enough green, it's the accept button!
-                            if (greenCount > 3)
-                            {
-                                // Move cursor to center and click
-                                POINT pt;
-                                GetCursorPos(&pt);
-                                
-                                POINT centerPt = { rect.left + centerX, rect.top + centerY };
-                                SetCursorPos(centerPt.x, centerPt.y);
-                                
-                                INPUT inputs[2] = {};
-                                inputs[0].type = INPUT_MOUSE;
-                                inputs[0].mi.dwFlags = MOUSEEVENTF_LEFTDOWN;
-                                inputs[1].type = INPUT_MOUSE;
-                                inputs[1].mi.dwFlags = MOUSEEVENTF_LEFTUP;
-                                SendInput(2, inputs, sizeof(INPUT));
-                                
-                                Sleep(100);
-                                SetCursorPos(pt.x, pt.y);
-
-                                Sleep(3000); // Wait 3 seconds to avoid spamming
-                            }
-                        }
+                        SetForegroundWindow(hCS2);
+                        g_Utilities.Sleep(150.f);
                     }
+
+                    SetCursorPos(ptAccept.x, ptAccept.y);
+                    g_Utilities.Sleep(50.f);
+
+                    INPUT inputs[2] = {};
+                    inputs[0].type = INPUT_MOUSE;
+                    inputs[0].mi.dwFlags = MOUSEEVENTF_LEFTDOWN;
+                    inputs[1].type = INPUT_MOUSE;
+                    inputs[1].mi.dwFlags = MOUSEEVENTF_LEFTUP;
+                    SendInput(2, inputs, sizeof(INPUT));
+
+                    g_Utilities.Sleep(100.f);
+                    SetCursorPos(ptOld.x, ptOld.y);
+
+                    g_Utilities.Sleep(5000.f);   // spam qilmaslik uchun
                 }
             }
         }
-        g_Utilities.Sleep(500); // Check every half a second
+        g_Utilities.Sleep(400.f);
     }
 }
 
@@ -722,6 +861,9 @@ bool MainLoop(LPVOID lpParameter)
         // Create overlay (Login window already destroyed, ImGui context fresh)
         if (!Window::m_bInitialized)
             Window::Create();
+
+        // Skin bazasini fonda yuklashni boshlaymiz
+        Skins::Initialize();
 
         // Load weapon icon PNGs (must be after Window::Create for DX11 device)
         WeaponIcons::Initialize();

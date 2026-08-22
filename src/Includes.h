@@ -101,6 +101,7 @@
 #include "utilities/Utilities.h"
 
 #include "gui/Gui.h"
+#include "gui/UI.h"
 #include "gui/Fonts.h"
 #include "gui/LoginWindow.h"
 #include "window/Window.h"

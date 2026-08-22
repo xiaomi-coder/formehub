@@ -3,9 +3,9 @@
 
 enum class ETier : std::uint8_t
 {
-    LITE = 0,   // Free  - ESP + Radar + C4 Timer + AntiFlash
-    MID  = 1,   // Paid  - + Bhop + Triggerbot
-    PRO  = 2,   // Paid  - + Aimbot + all features
+    LITE = 0,   // Free - WH/ESP + Glow + AntiFlash + C4 Timer
+    MID  = 1,   // (ishlatilmaydi - bot faqat 'pro' beradi, saqlab turibmiz)
+    PRO  = 2,   // VIP  - qolgan hammasi: Radar, Skin Changer, Bhop, Triggerbot, Aimbot
 };
 
 class CLicense
@@ -39,7 +39,7 @@ public:
     {
         switch (m_eTier)
         {
-        case ETier::PRO:  return "PRO";
+        case ETier::PRO:  return "VIP";
         case ETier::MID:  return "MID";
         default:          return "FREE";
         }

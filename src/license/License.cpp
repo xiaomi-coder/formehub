@@ -12,7 +12,7 @@ void CLicense::Load()
 
     std::cout << std::endl;
     std::cout << "  ==============================" << std::endl;
-    std::cout << "  SHIFTHUB.UZ - Login" << std::endl;
+    std::cout << "  SHIFTHUB - Login" << std::endl;
     std::cout << "  ==============================" << std::endl;
 
     for (int attempt = 0; attempt < 5; attempt++)
@@ -61,9 +61,9 @@ void CLicense::Load()
             m_strUser  = jResp["user"].value("username", username);
 
             std::string strTier = jResp["user"].value("tier", "free");
-            if (strTier == "pro")       m_eTier = ETier::PRO;
-            else if (strTier == "mid")  m_eTier = ETier::MID;
-            else                        m_eTier = ETier::LITE;
+            if (strTier == "pro" || strTier == "vip") m_eTier = ETier::PRO;
+            else if (strTier == "mid")                m_eTier = ETier::MID;
+            else                                      m_eTier = ETier::LITE;
 
             m_strExpiry = jResp["user"].value("expires_at", "N/A");
 
@@ -117,9 +117,9 @@ bool CLicense::CheckLicense()
 
         // valid:true — tier ni yangilaymiz
         std::string strTier = jResp.value("tier", "free");
-        if (strTier == "pro")       m_eTier = ETier::PRO;
-        else if (strTier == "mid")  m_eTier = ETier::MID;
-        else                        m_eTier = ETier::LITE;
+        if (strTier == "pro" || strTier == "vip") m_eTier = ETier::PRO;
+        else if (strTier == "mid")                m_eTier = ETier::MID;
+        else                                      m_eTier = ETier::LITE;
 
         return true;
     }
