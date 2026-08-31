@@ -3,9 +3,9 @@
 #include <cstdint>
 
 // ============================================================================
-// OFFSETS — CS2 build 14178 (a2x/cs2-dumper, 2026-08-27 09:58 UTC)
+// OFFSETS — CS2 build 14178 (a2x/cs2-dumper, 2026-08-29 09:27 UTC)
 //
-// UPDATED 2026-08-27. Regenerated against the current game: client.dll
+// UPDATED 2026-08-29. Regenerated against the current game: client.dll
 // (PE build 2026-08-24 22:19 UTC) is the binary this dump was taken from.
 // Only the global offsets moved (~+0x1D1A0); the schema field layout did
 // not move (76/78 fallbacks in SchemaSystem.cpp matched).
@@ -27,12 +27,12 @@
 namespace Offsets
 {
     // === Global Offsets — offsets.json "client.dll" ============ [OK] =======
-    constexpr std::ptrdiff_t dwEntityList                          = 0x2571230;    // 39260720
+    constexpr std::ptrdiff_t dwEntityList                          = 0x2571220;    // 39260704
     constexpr std::ptrdiff_t dwLocalPlayerController               = 0x23A0F30;    // 37359408
     constexpr std::ptrdiff_t dwLocalPlayerPawn                     = 0x23C6268;    // 37511784
     constexpr std::ptrdiff_t dwPlantedC4                           = 0x2390A18;    // 37292568
-    constexpr std::ptrdiff_t dwViewAngles                          = 0x23DC308;    // 37602056
-    constexpr std::ptrdiff_t dwCSGOInput                           = 0x23DBC80;    // 37600384
+    constexpr std::ptrdiff_t dwViewAngles                          = 0x23DC2F8;    // 37602040
+    constexpr std::ptrdiff_t dwCSGOInput                           = 0x23DBC70;    // 37600368
     constexpr std::ptrdiff_t dwGameRules                           = 0x23C5D28;    // 37510440
     constexpr std::ptrdiff_t dwGlobalVars                          = 0x20AF5F0;    // 34272752
     constexpr std::ptrdiff_t dwGlowManager                         = 0x23C2A58;    // 37497432
