@@ -430,7 +430,7 @@ namespace Game
 
     // ===== View Matrix & Screen Math =====
     // offsets.json "client.dll" -> dwViewMatrix = 37537840, a2x build 14177 (2026-08-25).
-    constexpr std::ptrdiff_t dwViewMatrix = 0x23CB830;
+    constexpr std::ptrdiff_t dwViewMatrix = 0x23D21F0;
     struct ViewMatrix { float m[4][4]; };
 
     inline bool WorldToScreen(const float* worldPos, float& outX, float& outY, float screenW, float screenH)

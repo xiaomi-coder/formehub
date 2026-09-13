@@ -3,9 +3,9 @@
 #include <cstdint>
 
 // ============================================================================
-// OFFSETS — CS2 build 14178 (a2x/cs2-dumper, 2026-08-29 09:27 UTC)
+// OFFSETS — CS2 build 14181 (a2x/cs2-dumper, 2026-09-10 12:36 UTC)
 //
-// UPDATED 2026-08-29. Regenerated against the current game: client.dll
+// UPDATED 2026-09-10. Regenerated against the current game: client.dll
 // (PE build 2026-08-24 22:19 UTC) is the binary this dump was taken from.
 // Only the global offsets moved (~+0x1D1A0); the schema field layout did
 // not move (76/78 fallbacks in SchemaSystem.cpp matched).
@@ -27,16 +27,16 @@
 namespace Offsets
 {
     // === Global Offsets — offsets.json "client.dll" ============ [OK] =======
-    constexpr std::ptrdiff_t dwEntityList                          = 0x2571220;    // 39260704
-    constexpr std::ptrdiff_t dwLocalPlayerController               = 0x23A0F30;    // 37359408
-    constexpr std::ptrdiff_t dwLocalPlayerPawn                     = 0x23C6268;    // 37511784
-    constexpr std::ptrdiff_t dwPlantedC4                           = 0x2390A18;    // 37292568
-    constexpr std::ptrdiff_t dwViewAngles                          = 0x23DC2F8;    // 37602040
-    constexpr std::ptrdiff_t dwCSGOInput                           = 0x23DBC70;    // 37600368
-    constexpr std::ptrdiff_t dwGameRules                           = 0x23C5D28;    // 37510440
-    constexpr std::ptrdiff_t dwGlobalVars                          = 0x20AF5F0;    // 34272752
-    constexpr std::ptrdiff_t dwGlowManager                         = 0x23C2A58;    // 37497432
-    constexpr std::ptrdiff_t dwPrediction                          = 0x23C6170;    // 37511536
+    constexpr std::ptrdiff_t dwEntityList                          = 0x2577BE0;    // 39287776
+    constexpr std::ptrdiff_t dwLocalPlayerController               = 0x23A78D0;    // 37386448
+    constexpr std::ptrdiff_t dwLocalPlayerPawn                     = 0x23CCC08;    // 37538824
+    constexpr std::ptrdiff_t dwPlantedC4                           = 0x23973B8;    // 37319608
+    constexpr std::ptrdiff_t dwViewAngles                          = 0x23E2C98;    // 37629080
+    constexpr std::ptrdiff_t dwCSGOInput                           = 0x23E2610;    // 37627408
+    constexpr std::ptrdiff_t dwGameRules                           = 0x23CC6C8;    // 37537480
+    constexpr std::ptrdiff_t dwGlobalVars                          = 0x20B57C0;    // 34297792
+    constexpr std::ptrdiff_t dwGlowManager                         = 0x23C93F8;    // 37524472
+    constexpr std::ptrdiff_t dwPrediction                          = 0x23CCB10;    // 37538576
     constexpr std::ptrdiff_t dwGameEntitySystem_highestEntityIndex = 0x2090;    // 8336
 
     // === C_BaseEntity ========================================== [OK] =======
