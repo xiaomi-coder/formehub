@@ -3,9 +3,9 @@
 #include <cstdint>
 
 // ============================================================================
-// OFFSETS — CS2 build 14181 (a2x/cs2-dumper, 2026-09-10 12:36 UTC)
+// OFFSETS — CS2 build 14185 (a2x/cs2-dumper, 2026-09-25 21:58 UTC)
 //
-// UPDATED 2026-09-10. Regenerated against the current game: client.dll
+// UPDATED 2026-09-25. Regenerated against the current game: client.dll
 // (PE build 2026-08-24 22:19 UTC) is the binary this dump was taken from.
 // Only the global offsets moved (~+0x1D1A0); the schema field layout did
 // not move (76/78 fallbacks in SchemaSystem.cpp matched).
@@ -27,17 +27,17 @@
 namespace Offsets
 {
     // === Global Offsets — offsets.json "client.dll" ============ [OK] =======
-    constexpr std::ptrdiff_t dwEntityList                          = 0x2577BE0;    // 39287776
-    constexpr std::ptrdiff_t dwLocalPlayerController               = 0x23A78D0;    // 37386448
-    constexpr std::ptrdiff_t dwLocalPlayerPawn                     = 0x23CCC08;    // 37538824
-    constexpr std::ptrdiff_t dwPlantedC4                           = 0x23973B8;    // 37319608
-    constexpr std::ptrdiff_t dwViewAngles                          = 0x23E2C98;    // 37629080
-    constexpr std::ptrdiff_t dwCSGOInput                           = 0x23E2610;    // 37627408
-    constexpr std::ptrdiff_t dwGameRules                           = 0x23CC6C8;    // 37537480
-    constexpr std::ptrdiff_t dwGlobalVars                          = 0x20B57C0;    // 34297792
-    constexpr std::ptrdiff_t dwGlowManager                         = 0x23C93F8;    // 37524472
-    constexpr std::ptrdiff_t dwPrediction                          = 0x23CCB10;    // 37538576
-    constexpr std::ptrdiff_t dwGameEntitySystem_highestEntityIndex = 0x2090;    // 8336
+    constexpr std::ptrdiff_t dwEntityList                          = 0x27151E8;    // 40980968
+    constexpr std::ptrdiff_t dwLocalPlayerController               = 0x2537628;    // 39024168
+    constexpr std::ptrdiff_t dwLocalPlayerPawn                     = 0x25606D8;    // 39192280
+    constexpr std::ptrdiff_t dwPlantedC4                           = 0x24C9290;    // 38572688
+    constexpr std::ptrdiff_t dwViewAngles                          = 0x2576238;    // 39281208
+    constexpr std::ptrdiff_t dwCSGOInput                           = 0x2575BB0;    // 39279536
+    constexpr std::ptrdiff_t dwGameRules                           = 0x255C8D8;    // 39176408
+    constexpr std::ptrdiff_t dwGlobalVars                          = 0x222BF88;    // 35831688
+    constexpr std::ptrdiff_t dwGlowManager                         = 0x255C8F0;    // 39176432
+    constexpr std::ptrdiff_t dwPrediction                          = 0x25605E0;    // 39192032
+    constexpr std::ptrdiff_t dwGameEntitySystem_highestEntityIndex = 0x2120;    // 8480
 
     // === C_BaseEntity ========================================== [OK] =======
     // NB: every field here moved 8 bytes vs the old dump. skin_changer.h used
@@ -65,10 +65,10 @@ namespace Offsets
 
     // === C_BasePlayerPawn — services block ===================== [OK] =======
     // Whole block shifted -0x1D0 from the old dump.
-    constexpr std::ptrdiff_t m_pWeaponServices   = 0x1208; // 4616
-    constexpr std::ptrdiff_t m_pObserverServices = 0x1220; // 4640
-    constexpr std::ptrdiff_t m_pCameraServices   = 0x1240; // 4672  [DERIVED] -0x1D0
-    constexpr std::ptrdiff_t m_pMovementServices = 0x1248; // 4680
+    constexpr std::ptrdiff_t m_pWeaponServices   = 0x12F0; // 4848
+    constexpr std::ptrdiff_t m_pObserverServices = 0x1308; // 4872
+    constexpr std::ptrdiff_t m_pCameraServices   = 0x1328; // 4904  [DERIVED] -0x1D0
+    constexpr std::ptrdiff_t m_pMovementServices = 0x1330; // 4912
     constexpr std::ptrdiff_t m_pViewModelServices = 0x1250; // 4688
 
     // === CPlayer_WeaponServices ================================ [OK] =======
@@ -81,19 +81,19 @@ namespace Offsets
 
     // === CBasePlayerController ================================= [OK] =======
     constexpr std::ptrdiff_t m_hPawn                    = 0x6BC; // 1724
-    constexpr std::ptrdiff_t m_iszPlayerName            = 0x6F4; // 1780
-    constexpr std::ptrdiff_t m_bIsLocalPlayerController = 0x788; // 1928
+    constexpr std::ptrdiff_t m_iszPlayerName            = 0x6FC; // 1788
+    constexpr std::ptrdiff_t m_bIsLocalPlayerController = 0x790; // 1936
 
     // === CCSPlayerController =================================== [OK] =======
-    constexpr std::ptrdiff_t m_iCompTeammateColor   = 0x850; // 2128
-    constexpr std::ptrdiff_t m_sSanitizedPlayerName = 0x868; // 2152  CUtlString
-    constexpr std::ptrdiff_t m_hPlayerPawn          = 0x914; // 2324  CHandle<C_CSPlayerPawn>
-    constexpr std::ptrdiff_t m_hObserverPawn        = 0x918; // 2328
-    constexpr std::ptrdiff_t m_bPawnIsAlive         = 0x91C; // 2332
+    constexpr std::ptrdiff_t m_iCompTeammateColor   = 0x858; // 2136
+    constexpr std::ptrdiff_t m_sSanitizedPlayerName = 0x878; // 2168  CUtlString
+    constexpr std::ptrdiff_t m_hPlayerPawn          = 0x92C; // 2348  CHandle<C_CSPlayerPawn>
+    constexpr std::ptrdiff_t m_hObserverPawn        = 0x930; // 2352
+    constexpr std::ptrdiff_t m_bPawnIsAlive         = 0x934; // 2356
 
     // === C_BaseModelEntity ===================================== [OK] =======
-    constexpr std::ptrdiff_t m_Glow          = 0xDE0; // 3552  CGlowProperty
-    constexpr std::ptrdiff_t m_vecViewOffset = 0xE78; // 3704
+    constexpr std::ptrdiff_t m_Glow          = 0xDE8; // 3560  CGlowProperty
+    constexpr std::ptrdiff_t m_vecViewOffset = 0xF60; // 3936
 
     // === CGlowProperty ========================================= [OK] =======
     constexpr std::ptrdiff_t m_iGlowType         = 0x30; // 48
@@ -103,14 +103,14 @@ namespace Offsets
     constexpr std::ptrdiff_t m_bGlowing          = 0x51; // 81
 
     // === C_CSPlayerPawnBase / C_CSPlayerPawn =================== [OK] =======
-    constexpr std::ptrdiff_t m_flFlashMaxAlpha   = 0x1424; // 5156
-    constexpr std::ptrdiff_t m_flFlashDuration   = 0x1428; // 5160
-    constexpr std::ptrdiff_t m_bIsWalking        = 0x1C58; // 7256
-    constexpr std::ptrdiff_t m_entitySpottedState = 0x1C60; // 7264
-    constexpr std::ptrdiff_t m_bIsScoped         = 0x1C78; // 7288
-    constexpr std::ptrdiff_t m_bIsDefusing       = 0x1C7A; // 7290
-    constexpr std::ptrdiff_t m_iShotsFired       = 0x1C8C; // 7308
-    constexpr std::ptrdiff_t m_ArmorValue        = 0x1CA4; // 7332
+    constexpr std::ptrdiff_t m_flFlashMaxAlpha   = 0x150C; // 5388
+    constexpr std::ptrdiff_t m_flFlashDuration   = 0x1510; // 5392
+    constexpr std::ptrdiff_t m_bIsWalking        = 0x1E80; // 7808
+    constexpr std::ptrdiff_t m_entitySpottedState = 0x1E88; // 7816
+    constexpr std::ptrdiff_t m_bIsScoped         = 0x1EA0; // 7840
+    constexpr std::ptrdiff_t m_bIsDefusing       = 0x1EA2; // 7842
+    constexpr std::ptrdiff_t m_iShotsFired       = 0x1EB4; // 7860
+    constexpr std::ptrdiff_t m_ArmorValue        = 0x1ECC; // 7884
 
     // === EntitySpottedState_t ================================== [OK] =======
     constexpr std::ptrdiff_t m_bSpotted       = 0x8;  // 8
@@ -119,13 +119,13 @@ namespace Offsets
     // === SKIN CHANGER — C_EconEntity =========================== [OK] =======
     // Whole block shifted -0x1D0 from the old dump. These four fallback fields
     // are what actually decide which skin the weapon renders.
-    constexpr std::ptrdiff_t m_AttributeManager      = 0x11A8; // 4520  C_AttributeContainer
-    constexpr std::ptrdiff_t m_OriginalOwnerXuidLow  = 0x1678; // 5752
-    constexpr std::ptrdiff_t m_OriginalOwnerXuidHigh = 0x167C; // 5756
-    constexpr std::ptrdiff_t m_nFallbackPaintKit     = 0x1680; // 5760  int32
-    constexpr std::ptrdiff_t m_nFallbackSeed         = 0x1684; // 5764  int32
-    constexpr std::ptrdiff_t m_flFallbackWear        = 0x1688; // 5768  float32
-    constexpr std::ptrdiff_t m_nFallbackStatTrak     = 0x168C; // 5772  int32
+    constexpr std::ptrdiff_t m_AttributeManager      = 0x1290; // 4752  C_AttributeContainer
+    constexpr std::ptrdiff_t m_OriginalOwnerXuidLow  = 0x18A0; // 6304
+    constexpr std::ptrdiff_t m_OriginalOwnerXuidHigh = 0x18A4; // 6308
+    constexpr std::ptrdiff_t m_nFallbackPaintKit     = 0x18A8; // 6312  int32
+    constexpr std::ptrdiff_t m_nFallbackSeed         = 0x18AC; // 6316  int32
+    constexpr std::ptrdiff_t m_flFallbackWear        = 0x18B0; // 6320  float32
+    constexpr std::ptrdiff_t m_nFallbackStatTrak     = 0x18B4; // 6324  int32
 
     // === C_AttributeContainer ================================== [OK] =======
     constexpr std::ptrdiff_t m_Item = 0x50; // 80  C_EconItemView
@@ -159,11 +159,11 @@ namespace Offsets
 
     // === C_PlantedC4 =========================================== [OK] =======
     // m_flC4Blow moved +0x30; the rest of the block derived with that delta.
-    constexpr std::ptrdiff_t m_bBombTicking      = 0x11A0; // [DERIVED] +0x30
-    constexpr std::ptrdiff_t m_flDefuseLength    = 0x11EC; // [DERIVED] +0x30
-    constexpr std::ptrdiff_t m_flDefuseCountDown = 0x11F0; // [DERIVED] +0x30
-    constexpr std::ptrdiff_t m_flC4Blow          = 0x11D0; // 4560
-    constexpr std::ptrdiff_t m_bBombDefused      = 0x11F4; // 4596
+    constexpr std::ptrdiff_t m_bBombTicking      = 0x1288; // [DERIVED] +0x30
+    constexpr std::ptrdiff_t m_flDefuseLength    = 0x12D4; // [DERIVED] +0x30
+    constexpr std::ptrdiff_t m_flDefuseCountDown = 0x12D8; // [DERIVED] +0x30
+    constexpr std::ptrdiff_t m_flC4Blow          = 0x12B8; // 4792
+    constexpr std::ptrdiff_t m_bBombDefused      = 0x12DC; // 4828
 
     // === Bone / model ========================================== [OK] =======
     constexpr std::ptrdiff_t m_modelState    = 0x140; // 320   CSkeletonInstance
@@ -173,24 +173,24 @@ namespace Offsets
     constexpr std::ptrdiff_t m_flSimulationTime = 0x3B8; // 952   C_BaseEntity
 
     // === Render overrides (C_BaseModelEntity) ================== [OK] =======
-    constexpr std::ptrdiff_t m_nRenderMode            = 0xC78; // 3192  C_BaseModelEntity
-    constexpr std::ptrdiff_t m_clrRender              = 0xC98; // 3224  C_BaseModelEntity
-    constexpr std::ptrdiff_t m_flGlowBackfaceMult     = 0xE38; // 3640  C_BaseModelEntity
-    constexpr std::ptrdiff_t m_ClientOverrideTint     = 0xF60; // 3936  C_BaseModelEntity
-    constexpr std::ptrdiff_t m_bUseClientOverrideTint = 0xF64; // 3940  C_BaseModelEntity
+    constexpr std::ptrdiff_t m_nRenderMode            = 0xC80; // 3200  C_BaseModelEntity
+    constexpr std::ptrdiff_t m_clrRender              = 0xCA0; // 3232  C_BaseModelEntity
+    constexpr std::ptrdiff_t m_flGlowBackfaceMult     = 0xE40; // 3648  C_BaseModelEntity
+    constexpr std::ptrdiff_t m_ClientOverrideTint     = 0x1048; // 4168  C_BaseModelEntity
+    constexpr std::ptrdiff_t m_bUseClientOverrideTint = 0x104C; // 4172  C_BaseModelEntity
 
     // === C_CSPlayerPawn — gloves / misc ======================== [STALE] ====
     // No counterpart in the external base. skin_changer.h no longer reads the
     // active weapon through m_pClippingWeapon; it goes through
     // m_pWeaponServices -> m_hActiveWeapon, which is verified above.
     constexpr std::ptrdiff_t m_pClippingWeapon      = 0x3DC0;
-    constexpr std::ptrdiff_t m_bNeedToReApplyGloves = 0x168D; // 5773  C_CSPlayerPawn
-    constexpr std::ptrdiff_t m_EconGloves           = 0x1690; // 5776  C_CSPlayerPawn
-    constexpr std::ptrdiff_t m_nEconGlovesChanged   = 0x1B00; // 6912  C_CSPlayerPawn
-    constexpr std::ptrdiff_t m_hHudModelArms        = 0x1B84; // 7044  C_CSPlayerPawn
+    constexpr std::ptrdiff_t m_bNeedToReApplyGloves = 0x176D; // 5997  C_CSPlayerPawn
+    constexpr std::ptrdiff_t m_EconGloves           = 0x1770; // 6000  C_CSPlayerPawn
+    constexpr std::ptrdiff_t m_nEconGlovesChanged   = 0x1D20; // 7456  C_CSPlayerPawn
+    constexpr std::ptrdiff_t m_hHudModelArms        = 0x1DA8; // 7592  C_CSPlayerPawn
 
     // === CCSPlayerController_InventoryServices ================= [OK] =======
-    constexpr std::ptrdiff_t m_pInventoryServices = 0x818; // 2072  CCSPlayerController
+    constexpr std::ptrdiff_t m_pInventoryServices = 0x820; // 2080  CCSPlayerController
     constexpr std::ptrdiff_t m_unMusicID          = 0x58; // 88    CCSPlayerController_InventoryServices
 
     // CCSGOInput vtable index for CreateMove (reference only, unused)

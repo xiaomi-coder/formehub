@@ -97,11 +97,11 @@ void SchemaSystem::ApplyFallbacks()
 	SetIfZero(FNV1A::HashConst("C_BaseEntity->m_nSubclassID"), 896);
 
 	// CCSPlayerController
-	SetIfZero(FNV1A::HashConst("CCSPlayerController->m_sSanitizedPlayerName"), 2152);
+	SetIfZero(FNV1A::HashConst("CCSPlayerController->m_sSanitizedPlayerName"), 2168);
 
 	// C_PlantedC4
-	SetIfZero(FNV1A::HashConst("C_PlantedC4->m_flC4Blow"), 4560);
-	SetIfZero(FNV1A::HashConst("C_PlantedC4->m_bBombDefused"), 4596);
+	SetIfZero(FNV1A::HashConst("C_PlantedC4->m_flC4Blow"), 4792);
+	SetIfZero(FNV1A::HashConst("C_PlantedC4->m_bBombDefused"), 4828);
 
 	// CGameSceneNode
 	SetIfZero(FNV1A::HashConst("CGameSceneNode->m_vecAbsOrigin"), 200);
@@ -114,27 +114,27 @@ void SchemaSystem::ApplyFallbacks()
 
 	// CBasePlayerController
 	SetIfZero(FNV1A::HashConst("CBasePlayerController->m_hPawn"), 1724);
-	SetIfZero(FNV1A::HashConst("CBasePlayerController->m_iszPlayerName"), 1780);
-	SetIfZero(FNV1A::HashConst("CBasePlayerController->m_iDesiredFOV"), 1932);   // FOV changer
+	SetIfZero(FNV1A::HashConst("CBasePlayerController->m_iszPlayerName"), 1788);
+	SetIfZero(FNV1A::HashConst("CBasePlayerController->m_iDesiredFOV"), 1940);   // FOV changer
 
 	// C_PostProcessingVolume (tungi rejim — aksar xaritalarda yorug'likni shu boshqaradi)
-	SetIfZero(FNV1A::HashConst("C_PostProcessingVolume->m_flMinExposure"), 4284);
-	SetIfZero(FNV1A::HashConst("C_PostProcessingVolume->m_flMaxExposure"), 4288);
-	SetIfZero(FNV1A::HashConst("C_PostProcessingVolume->m_bExposureControl"), 4309);
-	SetIfZero(FNV1A::HashConst("C_PostProcessingVolume->m_bMaster"), 4308);
-	SetIfZero(FNV1A::HashConst("C_PostProcessingVolume->m_flFadeDuration"), 4272);
-	SetIfZero(FNV1A::HashConst("C_PostProcessingVolume->m_flExposureCompensation"), 4292);
+	SetIfZero(FNV1A::HashConst("C_PostProcessingVolume->m_flMinExposure"), 4516);
+	SetIfZero(FNV1A::HashConst("C_PostProcessingVolume->m_flMaxExposure"), 4520);
+	SetIfZero(FNV1A::HashConst("C_PostProcessingVolume->m_bExposureControl"), 4541);
+	SetIfZero(FNV1A::HashConst("C_PostProcessingVolume->m_bMaster"), 4540);
+	SetIfZero(FNV1A::HashConst("C_PostProcessingVolume->m_flFadeDuration"), 4504);
+	SetIfZero(FNV1A::HashConst("C_PostProcessingVolume->m_flExposureCompensation"), 4524);
 
 	// C_TonemapController2 (tungi rejim — CS2 dagi yangi klass nomi)
 	SetIfZero(FNV1A::HashConst("C_TonemapController2->m_flAutoExposureMin"), 1536);
 	SetIfZero(FNV1A::HashConst("C_TonemapController2->m_flAutoExposureMax"), 1540);
 
 	// C_BaseModelEntity
-	SetIfZero(FNV1A::HashConst("C_BaseModelEntity->m_vecViewOffset"), 3704);
-	SetIfZero(FNV1A::HashConst("C_BaseModelEntity->m_Glow"), 3552);
+	SetIfZero(FNV1A::HashConst("C_BaseModelEntity->m_vecViewOffset"), 3936);
+	SetIfZero(FNV1A::HashConst("C_BaseModelEntity->m_Glow"), 3560);
 
 	// C_EconEntity
-	SetIfZero(FNV1A::HashConst("C_EconEntity->m_AttributeManager"), 4520);
+	SetIfZero(FNV1A::HashConst("C_EconEntity->m_AttributeManager"), 4752);
 	SetIfZero(FNV1A::HashConst("C_AttributeContainer->m_Item"), 80);
 	SetIfZero(FNV1A::HashConst("C_EconItemView->m_iItemDefinitionIndex"), 442);
 
@@ -146,39 +146,39 @@ void SchemaSystem::ApplyFallbacks()
 	SetIfZero(FNV1A::HashConst("CGlowProperty->m_nGlowRangeMin"), 60);
 
 	// C_BasePlayerPawn
-	SetIfZero(FNV1A::HashConst("C_BasePlayerPawn->m_pWeaponServices"), 4616);
-	SetIfZero(FNV1A::HashConst("C_BasePlayerPawn->m_pObserverServices"), 4640);
+	SetIfZero(FNV1A::HashConst("C_BasePlayerPawn->m_pWeaponServices"), 4848);
+	SetIfZero(FNV1A::HashConst("C_BasePlayerPawn->m_pObserverServices"), 4872);
 	SetIfZero(FNV1A::HashConst("C_BasePlayerPawn->m_pViewModelServices"), 4688);
-	SetIfZero(FNV1A::HashConst("C_BasePlayerPawn->m_pMovementServices"), 4680);
+	SetIfZero(FNV1A::HashConst("C_BasePlayerPawn->m_pMovementServices"), 4912);
 
 	// CPlayer_WeaponServices
 	SetIfZero(FNV1A::HashConst("CPlayer_WeaponServices->m_hActiveWeapon"), 96);
 	SetIfZero(FNV1A::HashConst("CPlayer_WeaponServices->m_hMyWeapons"), 72);
 
 	// CBasePlayerController - CRITICAL for ESP
-	SetIfZero(FNV1A::HashConst("CBasePlayerController->m_bIsLocalPlayerController"), 1928);
+	SetIfZero(FNV1A::HashConst("CBasePlayerController->m_bIsLocalPlayerController"), 1936);
 
 	// CCSPlayerController
-	SetIfZero(FNV1A::HashConst("CCSPlayerController->m_hPlayerPawn"), 2324);
-	SetIfZero(FNV1A::HashConst("CCSPlayerController->m_hObserverPawn"), 2328);
-	SetIfZero(FNV1A::HashConst("CCSPlayerController->m_sSanitizedPlayerName"), 2152);
-	SetIfZero(FNV1A::HashConst("CCSPlayerController->m_iCompTeammateColor"), 2128);
-	SetIfZero(FNV1A::HashConst("CCSPlayerController->m_bPawnIsAlive"), 2332);
+	SetIfZero(FNV1A::HashConst("CCSPlayerController->m_hPlayerPawn"), 2348);
+	SetIfZero(FNV1A::HashConst("CCSPlayerController->m_hObserverPawn"), 2352);
+	SetIfZero(FNV1A::HashConst("CCSPlayerController->m_sSanitizedPlayerName"), 2168);
+	SetIfZero(FNV1A::HashConst("CCSPlayerController->m_iCompTeammateColor"), 2136);
+	SetIfZero(FNV1A::HashConst("CCSPlayerController->m_bPawnIsAlive"), 2356);
 
 	// CPlayer_ObserverServices - NOT in client.dll schema, MUST have fallback!
 	SetIfZero(FNV1A::HashConst("CPlayer_ObserverServices->m_hObserverTarget"), 76);
 	SetIfZero(FNV1A::HashConst("CPlayer_ObserverServices->m_iObserverMode"), 72);
 
 	// C_CSPlayerPawnBase / C_CSPlayerPawn
-	SetIfZero(FNV1A::HashConst("C_CSPlayerPawnBase->m_flFlashMaxAlpha"), 5156);
-	SetIfZero(FNV1A::HashConst("C_CSPlayerPawnBase->m_flFlashDuration"), 5160);
+	SetIfZero(FNV1A::HashConst("C_CSPlayerPawnBase->m_flFlashMaxAlpha"), 5388);
+	SetIfZero(FNV1A::HashConst("C_CSPlayerPawnBase->m_flFlashDuration"), 5392);
 	SetIfZero(FNV1A::HashConst("C_CSPlayerPawnBase->m_entitySpottedState"), 4504);
-	SetIfZero(FNV1A::HashConst("C_CSPlayerPawn->m_entitySpottedState"), 7264);
-	SetIfZero(FNV1A::HashConst("C_CSPlayerPawn->m_bIsScoped"), 7288);
-	SetIfZero(FNV1A::HashConst("C_CSPlayerPawn->m_bIsWalking"), 7256);
-	SetIfZero(FNV1A::HashConst("C_CSPlayerPawn->m_bIsDefusing"), 7290);
-	SetIfZero(FNV1A::HashConst("C_CSPlayerPawn->m_ArmorValue"), 7332);
-	SetIfZero(FNV1A::HashConst("C_CSPlayerPawn->m_iShotsFired"), 7308);
+	SetIfZero(FNV1A::HashConst("C_CSPlayerPawn->m_entitySpottedState"), 7816);
+	SetIfZero(FNV1A::HashConst("C_CSPlayerPawn->m_bIsScoped"), 7840);
+	SetIfZero(FNV1A::HashConst("C_CSPlayerPawn->m_bIsWalking"), 7808);
+	SetIfZero(FNV1A::HashConst("C_CSPlayerPawn->m_bIsDefusing"), 7842);
+	SetIfZero(FNV1A::HashConst("C_CSPlayerPawn->m_ArmorValue"), 7884);
+	SetIfZero(FNV1A::HashConst("C_CSPlayerPawn->m_iShotsFired"), 7860);
 
 	// EntitySpottedState_t
 	SetIfZero(FNV1A::HashConst("EntitySpottedState_t->m_bSpotted"), 8);
@@ -186,13 +186,13 @@ void SchemaSystem::ApplyFallbacks()
 
 	// ===================== SKIN CHANGER OFFSETS =====================
 	// C_EconEntity (Fallback fields — on the weapon entity itself)
-	SetIfZero(FNV1A::HashConst("C_EconEntity->m_AttributeManager"), 4520);
-	SetIfZero(FNV1A::HashConst("C_EconEntity->m_nFallbackPaintKit"), 5760);
-	SetIfZero(FNV1A::HashConst("C_EconEntity->m_nFallbackSeed"), 5764);
-	SetIfZero(FNV1A::HashConst("C_EconEntity->m_flFallbackWear"), 5768);
-	SetIfZero(FNV1A::HashConst("C_EconEntity->m_nFallbackStatTrak"), 5772);
-	SetIfZero(FNV1A::HashConst("C_EconEntity->m_OriginalOwnerXuidLow"), 5752);
-	SetIfZero(FNV1A::HashConst("C_EconEntity->m_OriginalOwnerXuidHigh"), 5756);
+	SetIfZero(FNV1A::HashConst("C_EconEntity->m_AttributeManager"), 4752);
+	SetIfZero(FNV1A::HashConst("C_EconEntity->m_nFallbackPaintKit"), 6312);
+	SetIfZero(FNV1A::HashConst("C_EconEntity->m_nFallbackSeed"), 6316);
+	SetIfZero(FNV1A::HashConst("C_EconEntity->m_flFallbackWear"), 6320);
+	SetIfZero(FNV1A::HashConst("C_EconEntity->m_nFallbackStatTrak"), 6324);
+	SetIfZero(FNV1A::HashConst("C_EconEntity->m_OriginalOwnerXuidLow"), 6304);
+	SetIfZero(FNV1A::HashConst("C_EconEntity->m_OriginalOwnerXuidHigh"), 6308);
 
 	// C_AttributeContainer
 	SetIfZero(FNV1A::HashConst("C_AttributeContainer->m_Item"), 80);

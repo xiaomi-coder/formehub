@@ -169,6 +169,15 @@ static void DrawBackdrop(ImDrawList* dl, float W, float H, float flTime)
 }
 
 // ===================================================================
+// =====================================================================
+//  OFFLINE VIP LOGIN
+//  Server (Railway) ishlamay turganda mijozlar kira olishi uchun.
+//  Bu juftlik exe ichida saqlanadi va serverga umuman so'rov yubormaydi.
+//  Server tiklangach bu blokni olib tashlash kerak.
+// =====================================================================
+static const char* const OFFLINE_USER = "xxxxx";
+static const char* const OFFLINE_PASS = "xuyyo";
+
 // ---------------------------------------------------------------------
 // Login/FREE dan keyin tier ga qarab standart funksiyalarni yoqish.
 // LITE hammaga ochiq; MID/PRO faqat server bergan tier bo'yicha.
@@ -419,6 +428,24 @@ bool LoginWindow::Run()
 
                 if (flTimer >= 1.2f)
                 {
+                    // --- Offline VIP: serverga bormaymiz ---
+                    if (strcmp(szUser, OFFLINE_USER) == 0 && strcmp(szPass, OFFLINE_PASS) == 0)
+                    {
+                        g_License.m_strUser   = OFFLINE_USER;
+                        g_License.m_eTier     = ETier::PRO;
+                        g_License.m_strExpiry = "Offline";
+                        g_License.m_strToken  = "OFFLINE";
+
+                        SecureZeroMemory(szPass, sizeof(szPass));
+
+                        ApplyTierDefaults();
+                        ePhase = EPhase::LOADING; nCur = 0;
+                        for (int i = 0; i < nSteps; i++) { steps[i].prog = 0; steps[i].done = false; }
+                        bCS2Found = false;
+                    }
+                    else
+                    {
+
                     json jBody;
                     jBody["username"] = std::string(szUser);
                     jBody["password"] = std::string(szPass);
@@ -457,6 +484,7 @@ bool LoginWindow::Run()
                         }
                         catch (...) { strError = "Server javobi xato!"; ePhase = EPhase::LOGIN; }
                     }
+                    }   // offline emas -> server
                 }
             }
 
@@ -602,6 +630,7 @@ bool LoginWindow::Run()
                         // Real actions
                         if (nCur == 0 && !g_License.m_strToken.empty()
                             && g_License.m_strToken != "LOCAL"
+                            && g_License.m_strToken != "OFFLINE"
                             && g_License.m_strToken != "FREE_MODE")
                         {
                             g_License.CheckLicense();
