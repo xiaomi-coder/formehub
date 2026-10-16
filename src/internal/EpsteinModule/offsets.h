@@ -3,12 +3,12 @@
 #include <cstdint>
 
 // ============================================================================
-// OFFSETS — CS2 build 14185 (a2x/cs2-dumper, 2026-09-25 21:58 UTC)
+// OFFSETS — CS2 (a2x/cs2-dumper, 2026-10-15 13:10 UTC)
 //
-// UPDATED 2026-09-25. Regenerated against the current game: client.dll
-// (PE build 2026-08-24 22:19 UTC) is the binary this dump was taken from.
-// Only the global offsets moved (~+0x1D1A0); the schema field layout did
-// not move (76/78 fallbacks in SchemaSystem.cpp matched).
+// UPDATED 2026-10-16. Regenerated against the a2x dump published 2026-10-15.
+// The global offsets all moved again (see block below); among the schema
+// fields only the C_CSPlayerPawn block shifted (m_bIsWalking .. m_ArmorValue,
+// -8/-4). Everything else matched the previous dump.
 //
 // Source of truth is the cs2-dumper output vendored next to this file:
 //   - globals -> <repo>/src/internal/EpsteinModule/sdk/offsets.hpp
@@ -27,16 +27,16 @@
 namespace Offsets
 {
     // === Global Offsets — offsets.json "client.dll" ============ [OK] =======
-    constexpr std::ptrdiff_t dwEntityList                          = 0x27151E8;    // 40980968
-    constexpr std::ptrdiff_t dwLocalPlayerController               = 0x2537628;    // 39024168
-    constexpr std::ptrdiff_t dwLocalPlayerPawn                     = 0x25606D8;    // 39192280
-    constexpr std::ptrdiff_t dwPlantedC4                           = 0x24C9290;    // 38572688
-    constexpr std::ptrdiff_t dwViewAngles                          = 0x2576238;    // 39281208
-    constexpr std::ptrdiff_t dwCSGOInput                           = 0x2575BB0;    // 39279536
-    constexpr std::ptrdiff_t dwGameRules                           = 0x255C8D8;    // 39176408
-    constexpr std::ptrdiff_t dwGlobalVars                          = 0x222BF88;    // 35831688
-    constexpr std::ptrdiff_t dwGlowManager                         = 0x255C8F0;    // 39176432
-    constexpr std::ptrdiff_t dwPrediction                          = 0x25605E0;    // 39192032
+    constexpr std::ptrdiff_t dwEntityList                          = 0x271A908;    // 41003272
+    constexpr std::ptrdiff_t dwLocalPlayerController               = 0x253CB78;    // 39046008
+    constexpr std::ptrdiff_t dwLocalPlayerPawn                     = 0x2565718;    // 39212824
+    constexpr std::ptrdiff_t dwPlantedC4                           = 0x24CB3C0;    // 38581184
+    constexpr std::ptrdiff_t dwViewAngles                          = 0x257BCC8;    // 39304392
+    constexpr std::ptrdiff_t dwCSGOInput                           = 0x257B640;    // 39302720
+    constexpr std::ptrdiff_t dwGameRules                           = 0x25651D0;    // 39211472
+    constexpr std::ptrdiff_t dwGlobalVars                          = 0x2230090;    // 35848336
+    constexpr std::ptrdiff_t dwGlowManager                         = 0x2561EF0;    // 39198448
+    constexpr std::ptrdiff_t dwPrediction                          = 0x2565620;    // 39212576
     constexpr std::ptrdiff_t dwGameEntitySystem_highestEntityIndex = 0x2120;    // 8480
 
     // === C_BaseEntity ========================================== [OK] =======
@@ -105,12 +105,12 @@ namespace Offsets
     // === C_CSPlayerPawnBase / C_CSPlayerPawn =================== [OK] =======
     constexpr std::ptrdiff_t m_flFlashMaxAlpha   = 0x150C; // 5388
     constexpr std::ptrdiff_t m_flFlashDuration   = 0x1510; // 5392
-    constexpr std::ptrdiff_t m_bIsWalking        = 0x1E80; // 7808
-    constexpr std::ptrdiff_t m_entitySpottedState = 0x1E88; // 7816
-    constexpr std::ptrdiff_t m_bIsScoped         = 0x1EA0; // 7840
-    constexpr std::ptrdiff_t m_bIsDefusing       = 0x1EA2; // 7842
-    constexpr std::ptrdiff_t m_iShotsFired       = 0x1EB4; // 7860
-    constexpr std::ptrdiff_t m_ArmorValue        = 0x1ECC; // 7884
+    constexpr std::ptrdiff_t m_bIsWalking        = 0x1E78; // 7800
+    constexpr std::ptrdiff_t m_entitySpottedState = 0x1E80; // 7808
+    constexpr std::ptrdiff_t m_bIsScoped         = 0x1E98; // 7832
+    constexpr std::ptrdiff_t m_bIsDefusing       = 0x1E9A; // 7834
+    constexpr std::ptrdiff_t m_iShotsFired       = 0x1EB0; // 7856
+    constexpr std::ptrdiff_t m_ArmorValue        = 0x1EC8; // 7880
 
     // === EntitySpottedState_t ================================== [OK] =======
     constexpr std::ptrdiff_t m_bSpotted       = 0x8;  // 8

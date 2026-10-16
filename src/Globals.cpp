@@ -14,16 +14,16 @@ bool CGlobals::Update()
 	static std::once_flag flag;
 	std::call_once(flag, []()
 	{
-		// Default latest fallback offsets (a2x/cs2-dumper — build 14185, 2026-09-25)
-		std::uintptr_t uEntityList = 40980968;
-		std::uintptr_t uViewMatrix = 39213600;
-		std::uintptr_t uLocalPlayerController = 39024168;
-		std::uintptr_t uPlantedC4 = 38572688;
-		std::uintptr_t uGlobalVars = 35831688;
-		std::uintptr_t uCSGOInput = 39279536;
-		std::uintptr_t uNetworkGameClient = 9548224;
-		std::uintptr_t uEntitySystem = 40980968;
-		std::uintptr_t uSensitivity = 39176224;
+		// Default latest fallback offsets (a2x/cs2-dumper — 2026-10-15 13:10 UTC)
+		std::uintptr_t uEntityList = 41003272;          // client.dll + 0x271A908
+		std::uintptr_t uViewMatrix = 39235616;          // client.dll + 0x256B020
+		std::uintptr_t uLocalPlayerController = 39046008; // client.dll + 0x253CB78
+		std::uintptr_t uPlantedC4 = 38581184;           // client.dll + 0x24CB3C0
+		std::uintptr_t uGlobalVars = 35848336;          // client.dll + 0x2230090
+		std::uintptr_t uCSGOInput = 39302720;           // client.dll + 0x257B640
+		std::uintptr_t uNetworkGameClient = 9547712;    // engine2.dll + 0x91AFC0
+		std::uintptr_t uEntitySystem = 41003272;        // client.dll + 0x271A908 (dwGameEntitySystem)
+		std::uintptr_t uSensitivity = 39201304;         // client.dll + 0x2562A18
 
 		// Only use hardcoded fallbacks, disable local json and dynamic download to make it strictly built-in offsets.
 		bool bLoadedLocal = false;
