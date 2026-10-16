@@ -113,6 +113,7 @@
     <ClCompile Include="src\internal\DllMain.cpp" />
     <ClCompile Include="src\internal\InternalMain.cpp" />
     <ClCompile Include="src\internal\ConfigStub.cpp" />
+    <ClCompile Include="src\internal\ImGuiStub.cpp" />
     <ClCompile Include="src\Globals.cpp" />
     <ClCompile Include="src\features\entities\EntityList.cpp" />
     <ClCompile Include="src\memory\datatypes\CBaseHandle.cpp" />

@@ -107,6 +107,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\config\Config.cpp" />
+    <ClCompile Include="src\internal\ImGuiStub.cpp" />
     <ClCompile Include="src\loader\Injector.cpp" />
     <ClCompile Include="src\loader\LoaderMain.cpp" />
   </ItemGroup>
