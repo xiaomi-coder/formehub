@@ -489,6 +489,10 @@ static void DrawVisualSettings()
             UI::Col2();
             UI::Toggle(X("Ekran tashqarisi belgilari"), &CONFIG_GET(bool, g_Variables.m_PlayerVisuals.m_bDrawOffScreen));
 
+            UI::Toggle(X("Zirh paneli"), &CONFIG_GET(bool, g_Variables.m_PlayerVisuals.m_bDrawArmorBar));
+            UI::Col2();
+            UI::Toggle(X("Dormant (xira ko'rsat)"), &CONFIG_GET(bool, g_Variables.m_PlayerVisuals.m_bDrawDormant));
+
             UI::Gap(4.f);
             UI::Toggle(X("3D zarar ko'rsatkichi"), &CONFIG_GET(bool, g_Variables.m_Misc.m_bDamageIndicator));
             UI::Col2();

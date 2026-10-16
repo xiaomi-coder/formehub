@@ -16,6 +16,7 @@ namespace ESP
     void DrawBox2D(const ImVec2& vecMin, const ImVec2& vecMax, const Color& col);
     void DrawBoxCorner(const ImVec2& vecMin, const ImVec2& vecMax, const Color& col);
     void DrawHealthBar(const ImVec2& vecMin, const ImVec2& vecMax, int iHealth, int iMaxHealth);
+    void DrawArmorBar(const ImVec2& vecMin, const ImVec2& vecMax, int iArmor);
     void DrawName(const ImVec2& vecMin, const ImVec2& vecMax, const std::string& szName);
     void DrawWeapon(const ImVec2& vecMin, const ImVec2& vecMax, const std::string& szWeapon);
     void DrawDistance(const ImVec2& vecMin, const ImVec2& vecMax, float flDist);

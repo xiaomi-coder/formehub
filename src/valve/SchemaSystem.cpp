@@ -173,12 +173,12 @@ void SchemaSystem::ApplyFallbacks()
 	SetIfZero(FNV1A::HashConst("C_CSPlayerPawnBase->m_flFlashMaxAlpha"), 5388);
 	SetIfZero(FNV1A::HashConst("C_CSPlayerPawnBase->m_flFlashDuration"), 5392);
 	SetIfZero(FNV1A::HashConst("C_CSPlayerPawnBase->m_entitySpottedState"), 4504);
-	SetIfZero(FNV1A::HashConst("C_CSPlayerPawn->m_entitySpottedState"), 7816);
-	SetIfZero(FNV1A::HashConst("C_CSPlayerPawn->m_bIsScoped"), 7840);
-	SetIfZero(FNV1A::HashConst("C_CSPlayerPawn->m_bIsWalking"), 7808);
-	SetIfZero(FNV1A::HashConst("C_CSPlayerPawn->m_bIsDefusing"), 7842);
-	SetIfZero(FNV1A::HashConst("C_CSPlayerPawn->m_ArmorValue"), 7884);
-	SetIfZero(FNV1A::HashConst("C_CSPlayerPawn->m_iShotsFired"), 7860);
+	SetIfZero(FNV1A::HashConst("C_CSPlayerPawn->m_entitySpottedState"), 7808);
+	SetIfZero(FNV1A::HashConst("C_CSPlayerPawn->m_bIsScoped"), 7832);
+	SetIfZero(FNV1A::HashConst("C_CSPlayerPawn->m_bIsWalking"), 7800);
+	SetIfZero(FNV1A::HashConst("C_CSPlayerPawn->m_bIsDefusing"), 7834);
+	SetIfZero(FNV1A::HashConst("C_CSPlayerPawn->m_ArmorValue"), 7880);
+	SetIfZero(FNV1A::HashConst("C_CSPlayerPawn->m_iShotsFired"), 7856);
 
 	// EntitySpottedState_t
 	SetIfZero(FNV1A::HashConst("EntitySpottedState_t->m_bSpotted"), 8);

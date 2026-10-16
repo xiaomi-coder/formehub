@@ -134,6 +134,33 @@ void ESP::DrawHealthBar(const ImVec2& vecMin, const ImVec2& vecMax, int iHealth,
 }
 
 // -----------------------------------------------------------------------
+// Draw: armor bar (vertical, right side) — mirrors the health bar.
+// Only shown when the player actually has armor (iArmor > 0).
+// -----------------------------------------------------------------------
+void ESP::DrawArmorBar(const ImVec2& vecMin, const ImVec2& vecMax, int iArmor)
+{
+    iArmor = std::clamp(iArmor, 0, 100);
+    if (iArmor <= 0) return; // no armor — nothing to draw
+
+    float flFrac = static_cast<float>(iArmor) / 100.f;
+
+    Color colArmor(60, 140, 255, 255); // blue, like the CS2 armour icon
+
+    float flBarW = 4.f;
+    float flPad  = 2.f;
+    // right side of the bounding box
+    ImVec2 bgMin(vecMax.x + flPad,          vecMin.y);
+    ImVec2 bgMax(vecMax.x + flPad + flBarW, vecMax.y);
+
+    float flFilledY = bgMax.y - (bgMax.y - bgMin.y) * flFrac;
+
+    // background
+    Draw::AddRect(bgMin, bgMax, Color(0, 0, 0, 180), DRAW_RECT_FILLED);
+    // filled portion
+    Draw::AddRect(ImVec2(bgMin.x, flFilledY), bgMax, colArmor, DRAW_RECT_FILLED);
+}
+
+// -----------------------------------------------------------------------
 // Draw: player name (top-center)
 // -----------------------------------------------------------------------
 void ESP::DrawName(const ImVec2& vecMin, const ImVec2& vecMax, const std::string& szName)
@@ -445,6 +472,23 @@ void ESP::RenderPlayer(CCSPlayerController* pController, C_CSPlayerPawn* pPawn)
 
     Color col = GetPlayerColor(pController, pPawn);
 
+    // --- Dormant (stale) handling ---
+    // A dormant scene node means the game is no longer updating this entity
+    // (out of PVS), so its position/health are the LAST-KNOWN values.
+    bool bDormant = false;
+    {
+        auto* pNode = pPawn->m_pGameSceneNode();
+        if (pNode && reinterpret_cast<std::uintptr_t>(pNode) > 0x1000)
+            bDormant = pNode->m_bDormant();
+    }
+    if (bDormant)
+    {
+        if (!CONFIG_GET(bool, g_Variables.m_PlayerVisuals.m_bDrawDormant))
+            return; // user chose to hide stale players entirely
+        // dim to grey so it's visually clear the data is stale
+        col = Color(140, 140, 140, 150);
+    }
+
     // ignore teammates?
     bool bIgnoreTeam = CONFIG_GET_ARRAY(bool, g_Variables.m_PlayerVisuals.m_vecVisualsModifiers, VISUALS_IGNORE_TEAMMATES);
     if (bIgnoreTeam && pPawn->m_iTeamNum() == g_Globals.m_LocalPlayer.m_pPlayerPawn->m_iTeamNum())
@@ -468,6 +512,10 @@ void ESP::RenderPlayer(CCSPlayerController* pController, C_CSPlayerPawn* pPawn)
     // --- Health bar ---
     if (CONFIG_GET(bool, g_Variables.m_PlayerVisuals.m_bDrawHealthBar))
         DrawHealthBar(vecMin, vecMax, pPawn->m_iHealth(), pPawn->m_iMaxHealth());
+
+    // --- Armor bar (right side) ---
+    if (CONFIG_GET(bool, g_Variables.m_PlayerVisuals.m_bDrawArmorBar))
+        DrawArmorBar(vecMin, vecMax, pPawn->m_ArmorValue());
 
     // --- Name ---
     if (CONFIG_GET(bool, g_Variables.m_PlayerVisuals.m_bDrawName))

@@ -83,6 +83,7 @@ public:
 		CONFIG_ADD_VARIABLE(int,  m_iBoxType,        BOX_TYPE_BOTH);
 		CONFIG_ADD_VARIABLE(bool, m_bDrawBoxOutline, true);
 		CONFIG_ADD_VARIABLE(bool, m_bDrawHealthBar,  true);
+		CONFIG_ADD_VARIABLE(bool, m_bDrawArmorBar,   false); // zirh (armor) ustuni
 		CONFIG_ADD_VARIABLE(bool, m_bDrawName,       true);
 		CONFIG_ADD_VARIABLE(bool, m_bDrawWeapon,     true);
 		CONFIG_ADD_VARIABLE(bool, m_bDrawDistance,   false);
@@ -92,6 +93,7 @@ public:
 		CONFIG_ADD_VARIABLE(bool, m_bDrawSnaplines,  false);
 		CONFIG_ADD_VARIABLE(bool, m_bDrawHasC4,      true);
 		CONFIG_ADD_VARIABLE(bool, m_bDrawOffScreen,  true); // <-- Off-Screen ESP toggle
+		CONFIG_ADD_VARIABLE(bool, m_bDrawDormant,    true); // dormant (eskirgan) o'yinchini xira ko'rsat; o'chirilsa — yashiradi
 
 		CONFIG_ADD_VARIABLE(Color, m_colEnemyVisible,  Color(0,   255, 50,  255));
 		CONFIG_ADD_VARIABLE(Color, m_colEnemyOccluded, Color(0,   180, 30,  200));
